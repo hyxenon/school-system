@@ -11,7 +11,7 @@ class Employee extends Model
     /** @use HasFactory<\Database\Factories\EmployeeFactory> */
     use HasFactory;
 
-    protected $fillable = ['user_id', 'department_id', 'salary', 'position'];
+    protected $fillable = ['user_id', 'department_id', 'salary', 'position', 'isActive'];
 
     public function user(): BelongsTo
     {

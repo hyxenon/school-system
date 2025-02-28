@@ -12,12 +12,13 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-function Employee() {
+function Employee({ employees }: { employees: any }) {
     const stats = {
         totalEmployees: 248,
         totalProfessors: 64,
         totalDepartments: 12,
     };
+    console.log(employees);
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Employee" />
