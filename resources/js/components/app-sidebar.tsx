@@ -11,28 +11,28 @@ const roleBasedNavItems: Record<string, NavItem[]> = {
     registrar: [
         {
             title: 'Employee',
-            url: 'employee',
+            url: '/employee',
             icon: BriefcaseBusiness,
         },
 
         {
             title: 'Department',
-            url: 'department',
+            url: '/department',
             icon: BriefcaseBusiness,
         },
         {
             title: 'Course',
-            url: 'course',
+            url: '/course',
             icon: BriefcaseBusiness,
         },
         {
             title: 'Building',
-            url: 'course',
+            url: '/course',
             icon: BriefcaseBusiness,
         },
         {
             title: 'Room',
-            url: 'course',
+            url: '/course',
             icon: BriefcaseBusiness,
         },
     ],
@@ -89,6 +89,10 @@ const footerNavItems: NavItem[] = [
 
 export function AppSidebar() {
     const { auth } = usePage<SharedData>().props;
+    const userRole = auth.user.employee ? auth.user.employee.position : '';
+    const roleNavItems = roleBasedNavItems[userRole] || [];
+
+    const navItems = [...mainNavItems, ...roleNavItems];
 
     return (
         <Sidebar collapsible="icon" variant="inset">
@@ -105,7 +109,7 @@ export function AppSidebar() {
             </SidebarHeader>
 
             <SidebarContent>
-                <NavMain items={mainNavItems} />
+                <NavMain items={navItems} />
             </SidebarContent>
 
             <SidebarFooter>
