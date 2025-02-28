@@ -7,19 +7,70 @@ import { Link, usePage } from '@inertiajs/react';
 import { BriefcaseBusiness, LayoutGrid } from 'lucide-react';
 import AppLogo from './app-logo';
 
+const roleBasedNavItems: Record<string, NavItem[]> = {
+    registrar: [
+        {
+            title: 'Employee',
+            url: 'employee',
+            icon: BriefcaseBusiness,
+        },
+
+        {
+            title: 'Department',
+            url: 'department',
+            icon: BriefcaseBusiness,
+        },
+        {
+            title: 'Course',
+            url: 'course',
+            icon: BriefcaseBusiness,
+        },
+        {
+            title: 'Building',
+            url: 'course',
+            icon: BriefcaseBusiness,
+        },
+        {
+            title: 'Room',
+            url: 'course',
+            icon: BriefcaseBusiness,
+        },
+    ],
+    professor: [
+        {
+            title: 'My Classes',
+            url: 'classes',
+            icon: BriefcaseBusiness, // Change to appropriate icon
+        },
+    ],
+    student: [
+        {
+            title: 'My Courses',
+            url: 'courses',
+            icon: BriefcaseBusiness, // Change to appropriate icon
+        },
+    ],
+    program_head: [
+        {
+            title: 'Program Management',
+            url: 'program-management',
+            icon: BriefcaseBusiness, // Change to appropriate icon
+        },
+    ],
+    treasurer: [
+        {
+            title: 'Finance',
+            url: 'finance',
+            icon: BriefcaseBusiness, // Change to appropriate icon
+        },
+    ],
+};
+
 const mainNavItems: NavItem[] = [
     {
         title: 'Dashboard',
         url: '/dashboard',
         icon: LayoutGrid,
-    },
-];
-
-const registrarNavItems: NavItem[] = [
-    {
-        title: 'Employees',
-        url: 'employees',
-        icon: BriefcaseBusiness,
     },
 ];
 
@@ -38,6 +89,7 @@ const footerNavItems: NavItem[] = [
 
 export function AppSidebar() {
     const { auth } = usePage<SharedData>().props;
+
     return (
         <Sidebar collapsible="icon" variant="inset">
             <SidebarHeader>
