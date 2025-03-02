@@ -4,62 +4,49 @@ namespace App\Http\Controllers;
 
 use App\Models\Course;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
+use Illuminate\Support\Facades\Validator;
 
 class CourseController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
-    {
-        //
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
-        //
+        $validator = Validator::make($request->all(), [
+            'course_code' => 'required|string|max:10|unique:courses',
+            'name' => 'required|string|max:255',
+            'department_id' => 'required|exists:departments,id',
+        ]);
+
+        if ($validator->fails()) {
+            return back()->withErrors($validator->errors());
+        }
+
+        Course::create($validator->validated());
+
+        return redirect()->route('departments.index')->with('message', 'Course added successfully');
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(Course $course)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Course $course)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request, Course $course)
     {
-        //
+        $validator = Validator::make($request->all(), [
+            'course_code' => 'required|string|max:10|unique:courses,course_code,' . $course->id,
+            'name' => 'required|string|max:255',
+            'department_id' => 'required|exists:departments,id',
+        ]);
+
+        if ($validator->fails()) {
+            return back()->withErrors($validator->errors());
+        }
+
+        $course->update($validator->validated());
+
+        return redirect()->route('departments.index')->with('message', 'Course updated successfully');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(Course $course)
     {
-        //
+        $course->delete();
+
+        return redirect()->route('departments.index')->with('message', 'Course deleted successfully');
     }
 }

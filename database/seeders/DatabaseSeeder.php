@@ -19,13 +19,15 @@ class DatabaseSeeder extends Seeder
         User::factory()->create([
             'name' => "Justine Santos",
             'email' => 'registrar1@gmail.com',
-            'type' => 'employee'
+            'type' => 'employee',
+
         ]);
 
         User::factory()->create([
             'name' => "justine santos",
             'email' => 'professor1@gmail.com',
-            'type' => 'employee'
+            'type' => 'employee',
+
         ]);
 
 
@@ -38,13 +40,18 @@ class DatabaseSeeder extends Seeder
         Employee::factory()->create([
             'user_id' => 1,
             'salary' => 0,
-            'position' => 'registrar'
+            'position' => 'registrar',
+            'isActive' => true
         ]);
 
         Employee::factory()->create([
             'user_id' => 2,
             'salary' => 0,
-            'position' => 'professor'
+            'position' => 'professor',
+            'isActive' => true
         ]);
+
+
+        $this->call(DepartmentSeeder::class);
     }
 }

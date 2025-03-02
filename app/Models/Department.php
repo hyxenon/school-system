@@ -12,7 +12,7 @@ class Department extends Model
     /** @use HasFactory<\Database\Factories\DepartmentFactory> */
     use HasFactory;
 
-    protected $fillable = ['name', 'program_head_id'];
+    protected $fillable = ['department_code', 'name', 'program_head_id',];
 
     public function programHead(): BelongsTo
     {

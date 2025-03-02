@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\CourseController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\EmployeeController;
 use Illuminate\Support\Facades\Auth;
@@ -22,7 +23,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::resource('employee', EmployeeController::class);
 
-    Route::resource('department', DepartmentController::class);
+    Route::resource('departments', DepartmentController::class);
+    Route::resource('courses', CourseController::class);
 });
 
 

@@ -14,9 +14,11 @@ return new class extends Migration
     {
         Schema::create('subjects', function (Blueprint $table) {
             $table->id();
-            $table->string('subject_code')->unique();
+            $table->string('code')->unique();
             $table->string('name');
             $table->foreignIdFor(Course::class)->nullable();
+            $table->integer('credits');
+            $table->text('description')->nullable();
             $table->timestamps();
         });
     }
