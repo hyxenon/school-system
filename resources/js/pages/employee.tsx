@@ -1,7 +1,8 @@
+import { AddEmployeeDialog } from '@/components/employee-add-dialog';
 import { EmployeeTable } from '@/components/employee-table';
 import { StatCard } from '@/components/stat-card';
 import AppLayout from '@/layouts/app-layout';
-import { BreadcrumbItem, Employee } from '@/types';
+import { BreadcrumbItem, Department, Employee } from '@/types';
 import { Head } from '@inertiajs/react';
 import { Building2, GraduationCap, Users } from 'lucide-react';
 
@@ -15,9 +16,10 @@ const breadcrumbs: BreadcrumbItem[] = [
 interface EmployeePageProps {
     employees: Employee[];
     totalEmployees: number;
+    departments: Department[];
 }
 
-function EmployeePage({ employees, totalEmployees }: EmployeePageProps) {
+function EmployeePage({ employees, totalEmployees, departments }: EmployeePageProps) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Employee" />
@@ -38,6 +40,9 @@ function EmployeePage({ employees, totalEmployees }: EmployeePageProps) {
                         trend={{ value: 8, isPositive: true }}
                     />
                     <StatCard title="Total Departments" value={totalEmployees} icon={Building2} description="Active departments" />
+                </div>
+                <div className="flex justify-end">
+                    <AddEmployeeDialog departments={departments} />
                 </div>
                 <div className="border-sidebar-border/70 dark:border-sidebar-border relative flex-1 rounded-xl border p-4 md:min-h-min">
                     <EmployeeTable employees={employees} />

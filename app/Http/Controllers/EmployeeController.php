@@ -4,7 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Employee;
 use App\Models\User;
+use App\Models\Department;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
 
 class EmployeeController extends Controller
@@ -15,19 +18,14 @@ class EmployeeController extends Controller
     public function index()
     {
         $employees = Employee::with(['user', 'department'])->get();
+        $departments = Department::all();
         $totalEmployees = $employees->count();
+
         return Inertia::render('employee', [
             'employees' => $employees,
+            'departments' => $departments,
             'totalEmployees' => $totalEmployees,
         ]);
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
     }
 
     /**
@@ -35,7 +33,42 @@ class EmployeeController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users,email',
+            'position' => 'required|in:registrar,treasurer,professor',
+            'department_id' => 'nullable|string|exists:departments,id',
+        ]);
+
+        // For registrar and treasurer, force department_id to be null
+        if (in_array($validated['position'], ['registrar', 'treasurer'])) {
+            $validated['department_id'] = null;
+        }
+
+        try {
+            // Create user and employee in a transaction
+            DB::transaction(function () use ($validated) {
+                // Create the user
+                $user = User::create([
+                    'name' => $validated['name'],
+                    'email' => $validated['email'],
+                    'password' => Hash::make('password'), // Default password, should be changed later
+                ]);
+
+                // Create the employee
+                Employee::create([
+                    'user_id' => $user->id,
+                    'department_id' => $validated['department_id'],
+                    'position' => $validated['position'],
+                    'isActive' => true,
+                    'salary' => 40000
+                ]);
+            });
+
+            return redirect()->back()->with(['success' => 'Employee added successfully']);
+        } catch (\Exception $e) {
+            return redirect()->back()->withErrors(['general' => 'Failed to add employee: ' . $e->getMessage()]);
+        }
     }
 
     /**
