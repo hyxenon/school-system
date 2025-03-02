@@ -14,23 +14,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
-import type { BreadcrumbItem } from '@/types';
-
-// Define types
-interface Course {
-    id: number;
-    name: string;
-    description?: string;
-    course_code: string;
-}
-
-interface Department {
-    id: number;
-    name: string;
-    department_code: string;
-    program_head_id?: string;
-    courses: Course[];
-}
+import type { BreadcrumbItem, Department } from '@/types';
 
 interface DepartmentPageProps {
     departments: Department[];

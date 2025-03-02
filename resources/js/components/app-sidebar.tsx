@@ -10,8 +10,8 @@ import AppLogo from './app-logo';
 const roleBasedNavItems: Record<string, NavItem[]> = {
     registrar: [
         {
-            title: 'Employee',
-            url: '/employee',
+            title: 'Employees',
+            url: '/employees',
             icon: BriefcaseBusiness,
         },
 

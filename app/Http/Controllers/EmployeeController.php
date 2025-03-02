@@ -14,9 +14,11 @@ class EmployeeController extends Controller
      */
     public function index()
     {
-        $employees = Employee::with('user')->get();
+        $employees = Employee::with(['user', 'department'])->get();
+        $totalEmployees = $employees->count();
         return Inertia::render('employee', [
             'employees' => $employees,
+            'totalEmployees' => $totalEmployees,
         ]);
     }
 

@@ -1,5 +1,4 @@
 'use client';
-
 import { ChevronDown, ChevronUp, ChevronsUpDown, Eye, Pencil, Search, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -10,42 +9,13 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
-// Define the employee type
-type Employee = {
-    id: number;
-    name: string;
-    position: string;
-    department: string;
-    isActive: boolean;
-};
+import type { Employee } from '@/types';
 
-// Sample employee data
-const employees: Employee[] = [
-    {
-        id: 1,
-        name: 'John Doe',
-        position: 'Professor',
-        department: 'College of Engineering and Technology',
-        isActive: true,
-    },
-    { id: 2, name: 'Jane Smith', position: 'Registrar', department: 'Administration', isActive: true },
-    { id: 3, name: 'Robert Johnson', position: 'Professor', department: 'College of Arts and Sciences', isActive: true },
-    { id: 4, name: 'Emily Davis', position: 'Treasurer', department: 'Finance', isActive: false },
-    { id: 5, name: 'Michael Wilson', position: 'Professor', department: 'College of Business', isActive: true },
-    { id: 6, name: 'Sarah Brown', position: 'Registrar', department: 'College of Education', isActive: true },
-    {
-        id: 7,
-        name: 'David Miller',
-        position: 'Professor',
-        department: 'College of Engineering and Technology',
-        isActive: false,
-    },
-    { id: 8, name: 'Jennifer Garcia', position: 'Treasurer', department: 'Administration', isActive: true },
-    { id: 9, name: 'James Martinez', position: 'Professor', department: 'College of Health Sciences', isActive: true },
-    { id: 10, name: 'Lisa Robinson', position: 'Registrar', department: 'College of Arts and Sciences', isActive: false },
-];
+interface EmployeeTableProps {
+    employees: Employee[];
+}
 
-export function EmployeeTable() {
+export function EmployeeTable({ employees }: EmployeeTableProps) {
     const [searchTerm, setSearchTerm] = useState('');
     const [positionFilter, setPositionFilter] = useState<string | null>(null);
     const [departmentFilter, setDepartmentFilter] = useState<string | null>(null);
@@ -57,18 +27,18 @@ export function EmployeeTable() {
     const [itemsPerPage, setItemsPerPage] = useState(10); // Updated default value
 
     // Sorting state
-    const [sortColumn, setSortColumn] = useState<keyof Employee>('name');
+    const [sortColumn, setSortColumn] = useState<keyof Employee | 'name' | 'department'>('name');
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
     // Get unique departments and positions for filters
-    const departments = Array.from(new Set(employees.map((emp) => emp.department)));
+    const departments = Array.from(new Map(employees.filter((emp) => emp.department).map((emp) => [emp.department.id, emp.department])).values());
     const positions = Array.from(new Set(employees.map((emp) => emp.position)));
 
     // Filter employees based on search and filters
     const filteredEmployees = employees.filter((employee) => {
-        const matchesSearch = employee.name.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesSearch = employee.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) || false;
         const matchesPosition = !positionFilter || positionFilter === 'All' || employee.position === positionFilter;
-        const matchesDepartment = !departmentFilter || departmentFilter === 'All' || employee.department === departmentFilter;
+        const matchesDepartment = !departmentFilter || departmentFilter === 'All' || employee.department?.name === departmentFilter;
         const matchesStatus =
             !statusFilter ||
             statusFilter === 'All' ||
@@ -83,16 +53,24 @@ export function EmployeeTable() {
         if (sortColumn === 'isActive') {
             // Handle boolean sorting
             return sortDirection === 'asc' ? Number(a[sortColumn]) - Number(b[sortColumn]) : Number(b[sortColumn]) - Number(a[sortColumn]);
-        } else {
-            // Handle string sorting
-            const aValue = String(a[sortColumn]).toLowerCase();
-            const bValue = String(b[sortColumn]).toLowerCase();
+        } else if (sortColumn === 'name') {
+            // Handle nested user.name property
+            const aValue = a.user?.name?.toLowerCase() || '';
+            const bValue = b.user?.name?.toLowerCase() || '';
 
-            if (sortDirection === 'asc') {
-                return aValue.localeCompare(bValue);
-            } else {
-                return bValue.localeCompare(aValue);
-            }
+            return sortDirection === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
+        } else if (sortColumn === 'department') {
+            // Handle nested department.name property
+            const aValue = a.department?.name?.toLowerCase() || '';
+            const bValue = b.department?.name?.toLowerCase() || '';
+
+            return sortDirection === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
+        } else {
+            // Handle other string properties
+            const aValue = String(a[sortColumn] || '').toLowerCase();
+            const bValue = String(b[sortColumn] || '').toLowerCase();
+
+            return sortDirection === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
         }
     });
 
@@ -103,11 +81,11 @@ export function EmployeeTable() {
     const currentEmployees = sortedEmployees.slice(startIndex, endIndex);
 
     // Handle sort toggle
-    const handleSort = (column: keyof Employee) => {
+    const handleSort = (column: keyof Employee | 'name' | 'department') => {
         if (sortColumn === column) {
             setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
         } else {
-            setSortColumn(column);
+            setSortColumn(column as keyof Employee);
             setSortDirection('asc');
         }
     };
@@ -149,8 +127,8 @@ export function EmployeeTable() {
                         <SelectContent>
                             <SelectItem value="All">All Departments</SelectItem>
                             {departments.map((department) => (
-                                <SelectItem key={department} value={department}>
-                                    {department}
+                                <SelectItem key={department.id} value={department.name}>
+                                    {department.name}
                                 </SelectItem>
                             ))}
                         </SelectContent>
@@ -176,7 +154,7 @@ export function EmployeeTable() {
                             <TableHead className="w-[250px] cursor-pointer" onClick={() => handleSort('name')}>
                                 <div className="flex items-center">
                                     Name
-                                    {getSortIcon('name')}
+                                    {getSortIcon('name' as keyof Employee)}
                                 </div>
                             </TableHead>
                             <TableHead className="cursor-pointer" onClick={() => handleSort('position')}>
@@ -188,7 +166,7 @@ export function EmployeeTable() {
                             <TableHead className="hidden cursor-pointer md:table-cell" onClick={() => handleSort('department')}>
                                 <div className="flex items-center">
                                     Department
-                                    {getSortIcon('department')}
+                                    {getSortIcon('department' as keyof Employee)}
                                 </div>
                             </TableHead>
                             <TableHead className="cursor-pointer" onClick={() => handleSort('isActive')}>
@@ -204,10 +182,10 @@ export function EmployeeTable() {
                         {currentEmployees.length > 0 ? (
                             currentEmployees.map((employee) => (
                                 <TableRow key={employee.id}>
-                                    <TableCell className="font-medium">{employee.name}</TableCell>
-                                    <TableCell>{employee.position}</TableCell>
-                                    <TableCell className="hidden max-w-[200px] truncate md:table-cell" title={employee.department}>
-                                        {employee.department}
+                                    <TableCell className="font-medium">{employee.user?.name || 'N/A'}</TableCell>
+                                    <TableCell className="capitalize">{employee.position}</TableCell>
+                                    <TableCell className="hidden max-w-[200px] truncate md:table-cell" title={employee.department?.name || 'N/A'}>
+                                        {employee.department?.name || 'N/A'}
                                     </TableCell>
                                     <TableCell>
                                         <Badge variant={employee.isActive ? 'default' : 'secondary'}>
@@ -333,7 +311,7 @@ export function EmployeeTable() {
                         <div className="grid gap-4 py-4">
                             <div className="grid grid-cols-4 items-center gap-4">
                                 <span className="text-sm font-medium">Name:</span>
-                                <span className="col-span-3">{viewEmployee.name}</span>
+                                <span className="col-span-3">{viewEmployee.user?.name || 'N/A'}</span>
                             </div>
                             <div className="grid grid-cols-4 items-center gap-4">
                                 <span className="text-sm font-medium">Position:</span>
@@ -341,7 +319,7 @@ export function EmployeeTable() {
                             </div>
                             <div className="grid grid-cols-4 items-center gap-4">
                                 <span className="text-sm font-medium">Department:</span>
-                                <span className="col-span-3">{viewEmployee.department}</span>
+                                <span className="col-span-3">{viewEmployee.department?.name || 'N/A'}</span>
                             </div>
                             <div className="grid grid-cols-4 items-center gap-4">
                                 <span className="text-sm font-medium">Status:</span>

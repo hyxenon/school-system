@@ -37,22 +37,32 @@ export interface User {
     created_at: string;
     updated_at: string;
     employee?: Employee;
-    [key: string]: unknown; // This allows for additional properties...
+    [key: string]: unknown;
 }
 
 export interface Employee {
     id: string;
-    user_id: User;
-    department_id: Department;
+    user: User;
+    department: Department;
     created_at: string;
     updated_at: string;
     position: 'registrar' | 'treasurer' | 'professor';
+    isActive: boolean;
 }
 
 export interface Department {
     id: string;
     department_code: string;
     name: string;
+    program_head_id?: string;
+    courses: Course[];
     created_at: string;
     updated_at: string;
+}
+
+interface Course {
+    id: number;
+    name: string;
+    description?: string;
+    course_code: string;
 }

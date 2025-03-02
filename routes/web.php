@@ -21,7 +21,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Registrar 
 
-    Route::resource('employee', EmployeeController::class);
+    Route::resource('employees', EmployeeController::class);
+    Route::post('/employees/{employee}/toggle-active', [EmployeeController::class, 'toggleActive']);
 
     Route::resource('departments', DepartmentController::class);
     Route::resource('courses', CourseController::class);
