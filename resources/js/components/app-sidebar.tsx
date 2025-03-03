@@ -21,8 +21,8 @@ const roleBasedNavItems: Record<string, NavItem[]> = {
             icon: BriefcaseBusiness,
         },
         {
-            title: 'Building',
-            url: '/course',
+            title: 'Buildings',
+            url: '/buildings',
             icon: BriefcaseBusiness,
         },
         {

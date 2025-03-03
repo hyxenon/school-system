@@ -51,7 +51,7 @@ export interface Employee {
 }
 
 export interface Department {
-    id: string;
+    id: number;
     department_code: string;
     name: string;
     program_head_id?: string;
@@ -60,9 +60,26 @@ export interface Department {
     updated_at: string;
 }
 
-interface Course {
+export interface Course {
     id: number;
     name: string;
     description?: string;
     course_code: string;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface Building {
+    id: number;
+    name: string;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface Room {
+    id: number;
+    name: string;
+    building: Building;
+    created_at: string;
+    updated_at: string;
 }
