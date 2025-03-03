@@ -29,7 +29,14 @@ class RoomController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'building_id' => 'required|exists:buildings,id',
+        ]);
+
+        $room = Room::create($validated);
+
+        return redirect()->route('buildings.index')->with('success', 'Room created successfully.');
     }
 
     /**
@@ -53,7 +60,14 @@ class RoomController extends Controller
      */
     public function update(Request $request, Room $room)
     {
-        //
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'building_id' => 'required|exists:buildings,id',
+        ]);
+
+        $room->update($validated);
+
+        return redirect()->route('buildings.index')->with('success', 'Room updated successfully.');
     }
 
     /**
@@ -61,6 +75,8 @@ class RoomController extends Controller
      */
     public function destroy(Room $room)
     {
-        //
+        $room->delete();
+
+        return redirect()->route('buildings.index')->with('success', 'Room deleted sucessfully');
     }
 }

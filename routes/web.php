@@ -4,6 +4,7 @@ use App\Http\Controllers\BuildingController;
 use App\Http\Controllers\CourseController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\RoomController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -24,10 +25,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::resource('employees', EmployeeController::class);
     Route::post('/employees/{employee}/toggle-active', [EmployeeController::class, 'toggleActive']);
-
     Route::resource('departments', DepartmentController::class);
     Route::resource('courses', CourseController::class);
     Route::resource('buildings', BuildingController::class);
+    Route::resource('rooms', RoomController::class);
 });
 
 

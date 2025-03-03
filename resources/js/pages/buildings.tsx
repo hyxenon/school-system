@@ -149,12 +149,35 @@ export default function Index({ buildings, rooms }: Props) {
             return;
         }
 
-        // Would be handled by your controller
-        console.log('Submit room:', {
-            id: selectedRoom?.id,
-            name: roomName,
-            building_id: selectedBuildingId,
-        });
+        if (selectedRoom) {
+            router.put(
+                `/rooms/${selectedRoom.id}`,
+                {
+                    name: roomName,
+                    building_id: selectedBuildingId,
+                },
+                {
+                    onSuccess: () => {
+                        setRoomDialogOpen(false);
+                        toast.success('Room updated successfully');
+                    },
+                },
+            );
+        } else {
+            router.post(
+                `/rooms`,
+                {
+                    name: roomName,
+                    building_id: selectedBuildingId,
+                },
+                {
+                    onSuccess: () => {
+                        setRoomDialogOpen(false);
+                        toast.success('Room added successfully');
+                    },
+                },
+            );
+        }
 
         setRoomDialogOpen(false);
     };
@@ -211,7 +234,7 @@ export default function Index({ buildings, rooms }: Props) {
                         <Card>
                             <CardHeader>
                                 <CardTitle>Buildings</CardTitle>
-                                <CardDescription>Manage all buildings in your organization.</CardDescription>
+                                <CardDescription>Manage all buildings in your Wistleyan University.</CardDescription>
                             </CardHeader>
                             <CardContent>
                                 {buildings.length === 0 ? (
