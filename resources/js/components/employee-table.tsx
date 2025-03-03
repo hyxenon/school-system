@@ -1,16 +1,17 @@
-'use client';
 import { ChevronDown, ChevronUp, ChevronsUpDown, Eye, Pencil, Search, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 import type { Employee } from '@/types';
-
+import { useForm } from '@inertiajs/react';
+import { toast } from 'sonner';
+import { AddEmployeeDialog } from './employee-add-dialog';
 interface EmployeeTableProps {
     employees: Employee[];
 }
@@ -198,19 +199,17 @@ export function EmployeeTable({ employees }: EmployeeTableProps) {
                                                 <Eye className="h-4 w-4" />
                                                 <span className="sr-only">View</span>
                                             </Button>
-                                            <Button variant="outline" size="icon" title="Edit">
-                                                <Pencil className="h-4 w-4" />
-                                                <span className="sr-only">Edit</span>
-                                            </Button>
-                                            <Button
-                                                variant="outline"
-                                                size="icon"
-                                                disabled={!employee.isActive}
-                                                title={employee.isActive ? 'Delete' : 'Cannot delete inactive employee'}
-                                            >
-                                                <Trash2 className="h-4 w-4" />
-                                                <span className="sr-only">Delete</span>
-                                            </Button>
+                                            <AddEmployeeDialog
+                                                departments={departments}
+                                                employee={employee}
+                                                trigger={
+                                                    <Button variant="outline" size="icon" title="Edit">
+                                                        <Pencil className="h-4 w-4" />
+                                                        <span className="sr-only">Edit</span>
+                                                    </Button>
+                                                }
+                                            />
+                                            <DeleteEmployeeDialog employee={employee} />
                                         </div>
                                     </TableCell>
                                 </TableRow>
@@ -336,3 +335,48 @@ export function EmployeeTable({ employees }: EmployeeTableProps) {
         </div>
     );
 }
+
+const DeleteEmployeeDialog = ({ employee }: { employee: Employee }) => {
+    const [open, setOpen] = useState(false);
+
+    const { delete: destroy, processing } = useForm();
+
+    const handleDelete = () => {
+        destroy(route('employees.destroy', employee.id), {
+            onSuccess: () => {
+                setOpen(false);
+                toast.success('Employee deleted successfully');
+            },
+        });
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+                <Button
+                    variant="outline"
+                    size="icon"
+                    disabled={!employee.isActive}
+                    title={employee.isActive ? 'Delete' : 'Cannot delete inactive employee'}
+                >
+                    <Trash2 className="h-4 w-4" />
+                    <span className="sr-only">Delete</span>
+                </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle>Delete Employee</DialogTitle>
+                    <DialogDescription>Are you sure you want to delete {employee?.user.name}? This action cannot be undone.</DialogDescription>
+                </DialogHeader>
+                <DialogFooter className="sm:justify-end">
+                    <Button type="button" variant="secondary" onClick={() => setOpen(false)}>
+                        Cancel
+                    </Button>
+                    <Button type="button" variant="destructive" onClick={handleDelete} disabled={processing}>
+                        {processing ? 'Deleting...' : 'Delete Employee'}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+};

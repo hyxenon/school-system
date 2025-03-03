@@ -89,10 +89,40 @@ class EmployeeController extends Controller
 
     /**
      * Update the specified resource in storage.
-     */
-    public function update(Request $request, Employee $employee)
+     */ public function update(Request $request, Employee $employee)
     {
-        //
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users,email,' . $employee->user_id,
+            'position' => 'required|in:registrar,treasurer,professor',
+            'department_id' => 'nullable|string|exists:departments,id',
+        ]);
+
+        // For registrar and treasurer, force department_id to be null
+        if (in_array($validated['position'], ['registrar', 'treasurer'])) {
+            $validated['department_id'] = null;
+        }
+
+        try {
+            // Update user and employee in a transaction
+            DB::transaction(function () use ($validated, $employee) {
+                // Update the user
+                $employee->user->update([
+                    'name' => $validated['name'],
+                    'email' => $validated['email'],
+                ]);
+
+                // Update the employee
+                $employee->update([
+                    'department_id' => $validated['department_id'],
+                    'position' => $validated['position']
+                ]);
+            });
+
+            return redirect()->back()->with(['success' => 'Employee updated successfully']);
+        } catch (\Exception $e) {
+            return redirect()->back()->withErrors(['general' => 'Failed to update employee: ' . $e->getMessage()]);
+        }
     }
 
     /**
@@ -100,6 +130,8 @@ class EmployeeController extends Controller
      */
     public function destroy(Employee $employee)
     {
-        //
+        $employee->delete();
+
+        return redirect()->route('employees.index')->with('message', 'Employee deleted successfully');
     }
 }

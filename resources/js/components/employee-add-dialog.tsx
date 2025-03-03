@@ -3,14 +3,16 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Department } from '@/types';
+import { Department, Employee } from '@/types';
 import { useForm as useInertiaForm } from '@inertiajs/react';
-import { useEffect, useState } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 
-interface AddEmployeeDialogProps {
+interface EmployeeDialogProps {
     departments: Department[];
+    employee?: Employee; // Optional employee for edit mode
+    trigger?: ReactNode; // Custom trigger element
 }
 
 interface EmployeeFormData {
@@ -20,21 +22,23 @@ interface EmployeeFormData {
     department_id: string | null;
 }
 
-export function AddEmployeeDialog({ departments }: AddEmployeeDialogProps) {
+export function AddEmployeeDialog({ departments, employee, trigger }: EmployeeDialogProps) {
     const [open, setOpen] = useState(false);
+    const isEditMode = !!employee;
 
     const {
         data,
         setData,
         post,
+        put,
         processing,
         errors: serverErrors,
         reset: resetInertia,
     } = useInertiaForm({
-        name: '',
-        email: '',
-        position: 'professor',
-        department_id: null,
+        name: employee?.user?.name || '',
+        email: employee?.user?.email || '',
+        position: employee?.position || 'professor',
+        department_id: employee?.department_id ? String(employee.department_id) : null,
     });
 
     const {
@@ -46,10 +50,10 @@ export function AddEmployeeDialog({ departments }: AddEmployeeDialogProps) {
         formState: { errors },
     } = useForm<EmployeeFormData>({
         defaultValues: {
-            name: '',
-            email: '',
-            position: 'professor',
-            department_id: null,
+            name: employee?.user?.name || '',
+            email: employee?.user?.email || '',
+            position: employee?.position || 'professor',
+            department_id: employee?.department_id ? String(employee.department_id) : null,
         },
     });
 
@@ -84,16 +88,29 @@ export function AddEmployeeDialog({ departments }: AddEmployeeDialogProps) {
             department_id: formData.department_id,
         });
 
-        // Make the post request with the processed data
-        post('/employees', {
-            onSuccess: () => {
-                setOpen(false);
-                resetReactHookForm();
-                resetInertia();
-                toast.success('Department updated successfully');
-            },
-            preserveScroll: true,
-        });
+        if (isEditMode && employee) {
+            // Make the put request to update existing employee
+            put(`/employees/${employee.id}`, {
+                onSuccess: () => {
+                    setOpen(false);
+                    resetReactHookForm();
+                    resetInertia();
+                    toast.success('Employee updated successfully');
+                },
+                preserveScroll: true,
+            });
+        } else {
+            // Make the post request to create new employee
+            post('/employees', {
+                onSuccess: () => {
+                    setOpen(false);
+                    resetReactHookForm();
+                    resetInertia();
+                    toast.success('Employee added successfully');
+                },
+                preserveScroll: true,
+            });
+        }
     };
 
     // Reset both forms when dialog closes
@@ -107,14 +124,14 @@ export function AddEmployeeDialog({ departments }: AddEmployeeDialogProps) {
 
     return (
         <Dialog open={open} onOpenChange={handleDialogChange}>
-            <DialogTrigger asChild>
-                <Button>Add Employee</Button>
-            </DialogTrigger>
+            <DialogTrigger asChild>{trigger || <Button>{isEditMode ? 'Edit Employee' : 'Add Employee'}</Button>}</DialogTrigger>
             <DialogContent className="sm:max-w-[500px]">
                 <form onSubmit={handleSubmit(onSubmit)}>
                     <DialogHeader>
-                        <DialogTitle>Add New Employee</DialogTitle>
-                        <DialogDescription>Fill in the details to add a new employee to the system.</DialogDescription>
+                        <DialogTitle>{isEditMode ? 'Edit Employee' : 'Add New Employee'}</DialogTitle>
+                        <DialogDescription>
+                            {isEditMode ? 'Update the employee details in the system.' : 'Fill in the details to add a new employee to the system.'}
+                        </DialogDescription>
                     </DialogHeader>
 
                     <div className="grid gap-4 py-4">
@@ -129,7 +146,7 @@ export function AddEmployeeDialog({ departments }: AddEmployeeDialogProps) {
                                 onChange={(e) => setData('name', e.target.value)}
                             />
                             {(errors.name || serverErrors.name) && (
-                                <p className="col-span-3 col-start-2 text-red-500">
+                                <p className="col-span-3 col-start-2 text-sm text-red-500">
                                     {errors.name?.message || serverErrors.name || 'Name is required'}
                                 </p>
                             )}
@@ -150,7 +167,7 @@ export function AddEmployeeDialog({ departments }: AddEmployeeDialogProps) {
                                 onChange={(e) => setData('email', e.target.value)}
                             />
                             {(errors.email || serverErrors.email) && (
-                                <p className="col-span-3 col-start-2 text-red-500">
+                                <p className="col-span-3 col-start-2 text-sm text-red-500">
                                     {errors.email?.message || serverErrors.email || 'Valid email is required'}
                                 </p>
                             )}
@@ -166,7 +183,7 @@ export function AddEmployeeDialog({ departments }: AddEmployeeDialogProps) {
                                         setValue('position', value);
                                         setData('position', value);
                                     }}
-                                    defaultValue="professor"
+                                    defaultValue={employee?.position || 'professor'}
                                 >
                                     <SelectTrigger>
                                         <SelectValue placeholder="Select position" />
@@ -221,7 +238,7 @@ export function AddEmployeeDialog({ departments }: AddEmployeeDialogProps) {
                             Cancel
                         </Button>
                         <Button type="submit" disabled={processing}>
-                            {processing ? 'Adding...' : 'Add Employee'}
+                            {processing ? (isEditMode ? 'Updating...' : 'Adding...') : isEditMode ? 'Update Employee' : 'Add Employee'}
                         </Button>
                     </DialogFooter>
                 </form>

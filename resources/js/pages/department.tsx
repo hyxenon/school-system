@@ -1,5 +1,3 @@
-'use client';
-
 import { Head, useForm } from '@inertiajs/react';
 import { ChevronDown, Edit, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
@@ -24,7 +22,7 @@ interface DepartmentPageProps {
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
-        title: 'Departments',
+        title: 'Departments and Courses',
         href: '/department',
     },
 ];
@@ -38,6 +36,7 @@ export default function Department({ departments = [], totalDepartments = 12, to
     const [currentDepartmentId, setCurrentDepartmentId] = useState<number | null>(null);
     const [currentCourseId, setCurrentCourseId] = useState<number | null>(null);
     const [isEditMode, setIsEditMode] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
 
     // Department form
     const departmentForm = useForm({
@@ -134,17 +133,27 @@ export default function Department({ departments = [], totalDepartments = 12, to
         }
 
         if (isEditMode) {
+            setIsLoading(true);
             departmentForm.put(`/departments/${currentDepartmentId}`, {
                 onSuccess: () => {
                     setDepartmentModalOpen(false);
+                    setIsLoading(false);
                     toast.success('Department updated successfully');
+                },
+                onError: () => {
+                    setIsLoading(false);
                 },
             });
         } else {
+            setIsLoading(true);
             departmentForm.post('/departments', {
                 onSuccess: () => {
                     setDepartmentModalOpen(false);
+                    setIsLoading(false);
                     toast.success('Department added successfully');
+                },
+                onError: () => {
+                    setIsLoading(false);
                 },
             });
         }
@@ -172,17 +181,27 @@ export default function Department({ departments = [], totalDepartments = 12, to
         }
 
         if (isEditMode) {
+            setIsLoading(true);
             courseForm.put(`/courses/${currentCourseId}`, {
                 onSuccess: () => {
                     setCourseModalOpen(false);
                     toast.success('Course updated successfully');
+                    setIsLoading(false);
+                },
+                onError: () => {
+                    setIsLoading(false);
                 },
             });
         } else {
+            setIsLoading(true);
             courseForm.post('/courses', {
                 onSuccess: () => {
                     setCourseModalOpen(false);
                     toast.success('Course added successfully');
+                    setIsLoading(false);
+                },
+                onError: () => {
+                    setIsLoading(false);
                 },
             });
         }
@@ -190,20 +209,30 @@ export default function Department({ departments = [], totalDepartments = 12, to
 
     // Delete department
     const deleteDepartment = () => {
+        setIsLoading(true);
         departmentForm.delete(`/departments/${currentDepartmentId}`, {
             onSuccess: () => {
                 setDeleteDepartmentModalOpen(false);
                 toast.success('Department deleted successfully');
+                setIsLoading(false);
+            },
+            onError: () => {
+                setIsLoading(false);
             },
         });
     };
 
     // Delete course
     const deleteCourse = () => {
+        setIsLoading(true);
         courseForm.delete(`/courses/${currentCourseId}`, {
             onSuccess: () => {
                 setDeleteCourseModalOpen(false);
+                setIsLoading(false);
                 toast.success('Course deleted successfully');
+            },
+            onError: () => {
+                setIsLoading(false);
             },
         });
     };
@@ -211,7 +240,7 @@ export default function Department({ departments = [], totalDepartments = 12, to
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Department Management" />
-            <Toaster position="top-right" />
+            <Toaster />
             <div className="flex h-full flex-1 flex-col gap-4 p-4">
                 {/* Stats Section */}
                 <div className="grid auto-rows-min gap-4 md:grid-cols-2">
@@ -234,9 +263,7 @@ export default function Department({ departments = [], totalDepartments = 12, to
                 {/* Department List Section */}
                 <div className="mt-8 mb-4 flex items-center justify-between">
                     <h2 className="text-2xl font-bold"></h2>
-                    <Button onClick={openAddDepartmentModal}>
-                        <Plus className="mr-2 h-4 w-4" /> Add Department
-                    </Button>
+                    <Button onClick={openAddDepartmentModal}>Add Department</Button>
                 </div>
 
                 <div className="space-y-4">
@@ -377,7 +404,7 @@ export default function Department({ departments = [], totalDepartments = 12, to
                                 <Button variant="outline" onClick={() => setDepartmentModalOpen(false)}>
                                     Cancel
                                 </Button>
-                                <Button type="submit" onClick={submitDepartmentForm}>
+                                <Button type="submit" disabled={isLoading} onClick={submitDepartmentForm}>
                                     {isEditMode ? 'Save Changes' : 'Add Department'}
                                 </Button>
                             </div>
@@ -438,7 +465,7 @@ export default function Department({ departments = [], totalDepartments = 12, to
                             <Button variant="outline" onClick={() => setCourseModalOpen(false)}>
                                 Cancel
                             </Button>
-                            <Button type="submit" onClick={submitCourseForm}>
+                            <Button type="submit" disabled={isLoading} onClick={submitCourseForm}>
                                 {isEditMode ? 'Save Changes' : 'Add Course'}
                             </Button>
                         </DialogFooter>
@@ -459,7 +486,7 @@ export default function Department({ departments = [], totalDepartments = 12, to
                             <Button variant="outline" onClick={() => setDeleteDepartmentModalOpen(false)}>
                                 Cancel
                             </Button>
-                            <Button variant="destructive" onClick={deleteDepartment}>
+                            <Button variant="destructive" disabled={isLoading} onClick={deleteDepartment}>
                                 Delete Department
                             </Button>
                         </DialogFooter>
@@ -479,7 +506,7 @@ export default function Department({ departments = [], totalDepartments = 12, to
                             <Button variant="outline" onClick={() => setDeleteCourseModalOpen(false)}>
                                 Cancel
                             </Button>
-                            <Button variant="destructive" onClick={deleteCourse}>
+                            <Button variant="destructive" disabled={isLoading} onClick={deleteCourse}>
                                 Delete Course
                             </Button>
                         </DialogFooter>

@@ -1,10 +1,12 @@
 import { AddEmployeeDialog } from '@/components/employee-add-dialog';
 import { EmployeeTable } from '@/components/employee-table';
 import { StatCard } from '@/components/stat-card';
+
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem, Department, Employee } from '@/types';
 import { Head } from '@inertiajs/react';
 import { Building2, GraduationCap, Users } from 'lucide-react';
+import { Toaster } from 'sonner';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -20,9 +22,13 @@ interface EmployeePageProps {
 }
 
 function EmployeePage({ employees, totalEmployees, departments }: EmployeePageProps) {
+    const totalProfessor = employees.filter((employee) => employee.position === 'professor');
+    const totalRegistrar = employees.filter((employee) => employee.position === 'registrar');
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Employee" />
+            <Toaster />
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
                 <div className="grid auto-rows-min gap-4 md:grid-cols-3">
                     <StatCard
@@ -34,12 +40,12 @@ function EmployeePage({ employees, totalEmployees, departments }: EmployeePagePr
                     />
                     <StatCard
                         title="Total Professors"
-                        value={totalEmployees}
+                        value={totalProfessor.length}
                         icon={GraduationCap}
                         description="Academic teaching staff"
                         trend={{ value: 8, isPositive: true }}
                     />
-                    <StatCard title="Total Departments" value={totalEmployees} icon={Building2} description="Active departments" />
+                    <StatCard title="Total Registrar" value={totalRegistrar.length} icon={Building2} description="Active Registrar" />
                 </div>
                 <div className="flex justify-end">
                     <AddEmployeeDialog departments={departments} />
