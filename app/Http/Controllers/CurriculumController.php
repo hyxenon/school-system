@@ -3,63 +3,91 @@
 namespace App\Http\Controllers;
 
 use App\Models\Curriculum;
+use App\Models\Department;
+use App\Models\Course;
+use App\Models\Subject;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class CurriculumController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        //
+        $departments = Department::all();
+        $courses = Course::all();
+        $subjects = Subject::all();
+        $curriculums = Curriculum::with(['course', 'subjects'])->get();
+
+        return Inertia::render('curriculum', [
+            'departments' => $departments,
+            'courses' => $courses,
+            'subjects' => $subjects,
+            'curriculums' => $curriculums,
+        ]);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
-        //
+        $request->validate([
+            'course_id' => 'required|exists:courses,id',
+            'year_level' => 'required|integer|min:1|max:4',
+            'semester' => 'required|integer|min:1|max:2',
+            'subject_id' => 'required|exists:subjects,id',
+        ]);
+
+        // Check if the subject already exists in any curriculum for this course
+        $subjectExists = Curriculum::where('course_id', $request->course_id)
+            ->whereHas('subjects', function ($query) use ($request) {
+                $query->where('subjects.id', $request->subject_id);
+            })
+            ->exists();
+
+        if ($subjectExists) {
+            return back()->withErrors(['subject_id' => 'This subject is already in the curriculum for this course.']);
+        }
+
+        $curriculum = Curriculum::firstOrCreate([
+            'course_id' => $request->course_id,
+            'year_level' => $request->year_level,
+            'semester' => $request->semester,
+        ]);
+
+        $curriculum->subjects()->attach($request->subject_id);
+
+        return redirect()->back()->with([
+            'curriculums' => Curriculum::with(['course', 'subjects'])->get(),
+        ]);
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(Curriculum $curriculum)
+    public function destroy(Curriculum $curriculum, Request $request)
     {
-        //
+        $request->validate([
+            'subject_id' => 'required|exists:subjects,id',
+        ]);
+
+        $curriculum->subjects()->detach($request->subject_id);
+
+        // If the curriculum has no subjects left, delete it
+        if ($curriculum->subjects()->count() === 0) {
+            $curriculum->delete();
+        }
+
+        return redirect()->back()->with([
+            'curriculums' => Curriculum::with(['course', 'subjects'])->get(),
+        ]);
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Curriculum $curriculum)
+    public function getSubjects(Request $request)
     {
-        //
-    }
+        $request->validate([
+            'course_id' => 'required|exists:courses,id',
+        ]);
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, Curriculum $curriculum)
-    {
-        //
-    }
+        $subjects = Subject::where(function ($query) use ($request) {
+            $query->where('course_id', $request->course_id)
+                ->orWhereNull('course_id');
+        })->get();
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Curriculum $curriculum)
-    {
-        //
+        return response()->json($subjects);
     }
 }

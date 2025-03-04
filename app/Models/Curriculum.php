@@ -9,7 +9,7 @@ class Curriculum extends Model
 {
     /** @use HasFactory<\Database\Factories\CurriculumFactory> */
     use HasFactory;
-
+    protected $table = 'curriculums';
 
     protected $fillable = ['course_id', 'year_level', 'semester'];
 

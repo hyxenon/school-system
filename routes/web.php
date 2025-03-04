@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\BuildingController;
 use App\Http\Controllers\CourseController;
+use App\Http\Controllers\CurriculumController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\RoomController;
@@ -31,6 +32,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('buildings', BuildingController::class);
     Route::resource('rooms', RoomController::class);
     Route::resource('subjects', SubjectController::class);
+    Route::resource('curriculum', CurriculumController::class);
+    Route::delete('/curriculum/{curriculum}', [CurriculumController::class, 'destroy'])->name('curriculum.destroy');
+    Route::get('/api/curriculum/subjects', [CurriculumController::class, 'getSubjects']);
 });
 
 
