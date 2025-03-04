@@ -1,5 +1,8 @@
+'use client';
+import type React from 'react';
+
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -7,9 +10,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/app-layout';
-import { BreadcrumbItem, Course, Department, Subject } from '@/types';
-import { Head } from '@inertiajs/react';
-import { Edit, FilterX, Plus, Search, Trash } from 'lucide-react';
+import type { BreadcrumbItem, Course, Department, Subject } from '@/types';
+import { Head, router, usePage } from '@inertiajs/react';
+import { ChevronLeft, ChevronRight, Edit, FilterX, Plus, Search, Trash } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast, Toaster } from 'sonner';
 
@@ -20,56 +23,40 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-// In a real app, these would come from your API
-const mockDepartments: Department[] = [
-    { id: 1, department_code: 'CS', name: 'Computer Science', courses: [], created_at: '', updated_at: '' },
-    { id: 2, department_code: 'MATH', name: 'Mathematics', courses: [], created_at: '', updated_at: '' },
-];
+// Define the pagination type
+interface PaginationData {
+    current_page: number;
+    data: Subject[];
+    first_page_url: string;
+    from: number;
+    last_page: number;
+    last_page_url: string;
+    links: Array<{ url: string | null; label: string; active: boolean }>;
+    next_page_url: string | null;
+    path: string;
+    per_page: number;
+    prev_page_url: string | null;
+    to: number;
+    total: number;
+}
 
-const mockCourses: Course[] = [
-    { id: 1, name: 'Bachelor of Science in Computer Science', course_code: 'BSCS', created_at: '', updated_at: '' },
-    { id: 2, name: 'Bachelor of Science in Information Technology', course_code: 'BSIT', created_at: '', updated_at: '' },
-];
+// Define props interface
+interface SubjectPageProps {
+    subjects: PaginationData;
+    courses: Course[];
+    departments: Department[];
+    filters: {
+        search?: string;
+        department?: string;
+        course?: string;
+    };
+}
 
-const mockSubjects: Subject[] = [
-    {
-        id: 1,
-        code: 'CS101',
-        name: 'Introduction to Programming',
-        course: mockCourses[0],
-        credits: 3,
-        description: 'Basic programming concepts',
-        created_at: '',
-        updated_at: '',
-    },
-    {
-        id: 2,
-        code: 'CS201',
-        name: 'Data Structures',
-        course: mockCourses[0],
-        credits: 4,
-        description: 'Advanced data structures',
-        created_at: '',
-        updated_at: '',
-    },
-    {
-        id: 3,
-        code: 'IT101',
-        name: 'IT Fundamentals',
-        course: mockCourses[1],
-        credits: 3,
-        description: 'Basic IT concepts',
-        created_at: '',
-        updated_at: '',
-    },
-];
-
-function SubjectPage() {
-    const [subjects, setSubjects] = useState<Subject[]>(mockSubjects);
-    const [filteredSubjects, setFilteredSubjects] = useState<Subject[]>(mockSubjects);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [selectedDepartment, setSelectedDepartment] = useState<string>('all');
-    const [selectedCourse, setSelectedCourse] = useState<string>('all');
+function SubjectPage({ subjects, courses, departments, filters }: SubjectPageProps) {
+    // State for filter values
+    const [searchTerm, setSearchTerm] = useState(filters.search || '');
+    const [selectedDepartment, setSelectedDepartment] = useState(filters.department || 'all');
+    const [selectedCourse, setSelectedCourse] = useState(filters.course || 'all');
 
     // Modal states
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -83,38 +70,87 @@ function SubjectPage() {
         name: '',
         credits: 3,
         description: '',
+        course_id: '',
     });
     const [errors, setErrors] = useState<Record<string, string>>({});
 
+    // Get flash messages from the page props
+    const { flash } = usePage().props as any;
+
+    // Show toast notifications for flash messages
     useEffect(() => {
-        let result = [...subjects];
-
-        if (searchTerm) {
-            result = result.filter(
-                (subject) =>
-                    subject.name.toLowerCase().includes(searchTerm.toLowerCase()) || subject.code.toLowerCase().includes(searchTerm.toLowerCase()),
-            );
+        if (flash?.success) {
+            toast.success(flash.success);
         }
-
-        if (selectedCourse && selectedCourse !== 'all') {
-            result = result.filter((subject) => subject.course?.id.toString() === selectedCourse);
+        if (flash?.error) {
+            toast.error(flash.error);
         }
+    }, [flash]);
 
-        if (selectedDepartment && selectedDepartment !== 'all') {
-            const departmentCourses =
-                mockDepartments.find((dept) => dept.id.toString() === selectedDepartment)?.courses.map((course) => course.id) || [];
+    // Debounced search
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (searchTerm !== filters.search) {
+                applyFilters();
+            }
+        }, 300);
 
-            result = result.filter((subject) => subject.course && departmentCourses.includes(subject.course.id));
-        }
+        return () => clearTimeout(timer);
+    }, [searchTerm]);
 
-        setFilteredSubjects(result);
-    }, [searchTerm, selectedDepartment, selectedCourse, subjects]);
+    // Apply filters
+    const applyFilters = () => {
+        router.get(
+            '/subjects',
+            {
+                search: searchTerm,
+                department: selectedDepartment,
+                course: selectedCourse,
+            },
+            {
+                preserveState: true,
+                preserveScroll: true,
+            },
+        );
+    };
 
     // Reset filters
     const resetFilters = () => {
         setSearchTerm('');
         setSelectedDepartment('all');
         setSelectedCourse('all');
+
+        router.get(
+            '/subjects',
+            {},
+            {
+                preserveState: true,
+                preserveScroll: true,
+            },
+        );
+    };
+
+    // Handle pagination
+    const handlePageChange = (url: string) => {
+        if (url) {
+            // Extract the page number from the URL
+            const urlObj = new URL(url);
+            const page = urlObj.searchParams.get('page');
+
+            router.get(
+                '/subjects',
+                {
+                    page,
+                    search: searchTerm,
+                    department: selectedDepartment,
+                    course: selectedCourse,
+                },
+                {
+                    preserveState: true,
+                    preserveScroll: true,
+                },
+            );
+        }
     };
 
     // Form handling
@@ -130,7 +166,7 @@ function SubjectPage() {
 
     const handleNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
-        setFormData({ ...formData, [name]: parseInt(value) || 0 });
+        setFormData({ ...formData, [name]: Number.parseInt(value) || 0 });
 
         if (errors[name]) {
             setErrors({ ...errors, [name]: '' });
@@ -143,6 +179,39 @@ function SubjectPage() {
         if (errors[name]) {
             setErrors({ ...errors, [name]: '' });
         }
+    };
+
+    // Select handlers for filters
+    const handleDepartmentChange = (value: string) => {
+        setSelectedDepartment(value);
+        router.get(
+            '/subjects',
+            {
+                search: searchTerm,
+                department: value,
+                course: selectedCourse,
+            },
+            {
+                preserveState: true,
+                preserveScroll: true,
+            },
+        );
+    };
+
+    const handleCourseChange = (value: string) => {
+        setSelectedCourse(value);
+        router.get(
+            '/subjects',
+            {
+                search: searchTerm,
+                department: selectedDepartment,
+                course: value,
+            },
+            {
+                preserveState: true,
+                preserveScroll: true,
+            },
+        );
     };
 
     // Validation
@@ -169,53 +238,42 @@ function SubjectPage() {
     const handleAddSubject = () => {
         if (!validateForm()) return;
 
-        const newSubject: Subject = {
-            id: subjects.length + 1,
-            code: formData.code || '',
-            name: formData.name || '',
-            credits: formData.credits || 0,
-            description: formData.description || '',
-            course: mockCourses.find((c) => c.id.toString() === formData.courseId?.toString()) || undefined,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-        };
-
-        setSubjects([...subjects, newSubject]);
-        setIsAddModalOpen(false);
-        toast.success('Subject added successfully');
-        resetForm();
+        router.post('/subjects', formData, {
+            onSuccess: () => {
+                setIsAddModalOpen(false);
+                toast.success('Subject added successfully');
+                resetForm();
+            },
+            onError: (errors) => {
+                setErrors(errors);
+            },
+        });
     };
 
     const handleEditSubject = () => {
         if (!validateForm() || !currentSubject) return;
 
-        const updatedSubjects = subjects.map((subject) =>
-            subject.id === currentSubject.id
-                ? {
-                      ...subject,
-                      code: formData.code || subject.code,
-                      name: formData.name || subject.name,
-                      credits: formData.credits !== undefined ? formData.credits : subject.credits,
-                      description: formData.description !== undefined ? formData.description : subject.description,
-                      course: formData.courseId ? mockCourses.find((c) => c.id.toString() === formData.courseId?.toString()) : subject.course,
-                      updated_at: new Date().toISOString(),
-                  }
-                : subject,
-        );
-
-        setSubjects(updatedSubjects);
-        setIsEditModalOpen(false);
-        toast.success('Subject updated successfully');
-        resetForm();
+        router.put(`/subjects/${currentSubject.id}`, formData, {
+            onSuccess: () => {
+                setIsEditModalOpen(false);
+                resetForm();
+                toast.success('Subject updated successfully');
+            },
+            onError: (errors) => {
+                setErrors(errors);
+            },
+        });
     };
 
     const handleDeleteSubject = () => {
         if (!currentSubject) return;
 
-        const updatedSubjects = subjects.filter((subject) => subject.id !== currentSubject.id);
-        setSubjects(updatedSubjects);
-        setIsDeleteModalOpen(false);
-        toast.success('Subject deleted successfully');
+        router.delete(`/subjects/${currentSubject.id}`, {
+            onSuccess: () => {
+                setIsDeleteModalOpen(false);
+                toast.success('Subject deleted successfully');
+            },
+        });
     };
 
     // Open edit modal with current subject data
@@ -226,7 +284,7 @@ function SubjectPage() {
             name: subject.name,
             credits: subject.credits,
             description: subject.description,
-            courseId: subject.course?.id.toString(),
+            course_id: subject.course?.id.toString() || '',
         });
         setIsEditModalOpen(true);
     };
@@ -244,7 +302,7 @@ function SubjectPage() {
             name: '',
             credits: 3,
             description: '',
-            courseId: '',
+            course_id: '',
         });
         setErrors({});
         setCurrentSubject(null);
@@ -277,28 +335,26 @@ function SubjectPage() {
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                 />
                             </div>
-
-                            <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
+                            <Select value={selectedDepartment} onValueChange={handleDepartmentChange}>
                                 <SelectTrigger className="w-full sm:w-48">
                                     <SelectValue placeholder="Department" />
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="all">All Departments</SelectItem>
-                                    {mockDepartments.map((dept) => (
+                                    {departments.map((dept) => (
                                         <SelectItem key={dept.id} value={dept.id.toString()}>
                                             {dept.name}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
-
-                            <Select value={selectedCourse} onValueChange={setSelectedCourse}>
+                            <Select value={selectedCourse} onValueChange={handleCourseChange}>
                                 <SelectTrigger className="w-full sm:w-48">
                                     <SelectValue placeholder="Course" />
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="all">All Courses</SelectItem>
-                                    {mockCourses.map((course) => (
+                                    {courses.map((course) => (
                                         <SelectItem key={course.id} value={course.id.toString()}>
                                             {course.course_code}
                                         </SelectItem>
@@ -324,14 +380,14 @@ function SubjectPage() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {filteredSubjects.length === 0 ? (
+                                    {subjects.data.length === 0 ? (
                                         <TableRow>
                                             <TableCell colSpan={6} className="py-6 text-center text-gray-500">
                                                 No subjects found
                                             </TableCell>
                                         </TableRow>
                                     ) : (
-                                        filteredSubjects.map((subject) => (
+                                        subjects.data.map((subject) => (
                                             <TableRow key={subject.id}>
                                                 <TableCell className="font-medium">{subject.code}</TableCell>
                                                 <TableCell>{subject.name}</TableCell>
@@ -339,10 +395,10 @@ function SubjectPage() {
                                                 <TableCell>{subject.credits}</TableCell>
                                                 <TableCell className="max-w-xs truncate">{subject.description}</TableCell>
                                                 <TableCell className="space-x-2 text-right">
-                                                    <Button className="cursor-pointer" variant={'outline'} onClick={() => openEditModal(subject)}>
+                                                    <Button variant={'outline'} onClick={() => openEditModal(subject)}>
                                                         <Edit className="h-4 w-4" />
                                                     </Button>
-                                                    <Button className="cursor-pointer" variant={'outline'} onClick={() => openDeleteModal(subject)}>
+                                                    <Button variant={'outline'} onClick={() => openDeleteModal(subject)}>
                                                         <Trash className="h-4 w-4 text-red-600" />
                                                     </Button>
                                                 </TableCell>
@@ -353,11 +409,58 @@ function SubjectPage() {
                             </Table>
                         </div>
                     </CardContent>
+
+                    {/* Pagination */}
+                    {subjects.last_page > 1 && (
+                        <CardFooter className="flex items-center justify-between px-6 py-4">
+                            <div className="text-sm text-gray-500">
+                                Showing {subjects.from} to {subjects.to} of {subjects.total} subjects
+                            </div>
+                            <div className="flex space-x-2">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handlePageChange(subjects.prev_page_url || '')}
+                                    disabled={!subjects.prev_page_url}
+                                >
+                                    <ChevronLeft className="h-4 w-4" />
+                                </Button>
+                                {subjects.links
+                                    .filter((link) => !link.label.includes('Previous') && !link.label.includes('Next'))
+                                    .map((link, i) => (
+                                        <Button
+                                            key={i}
+                                            variant={link.active ? 'default' : 'outline'}
+                                            size="sm"
+                                            onClick={() => handlePageChange(link.url || '')}
+                                            disabled={!link.url}
+                                        >
+                                            {link.label}
+                                        </Button>
+                                    ))}
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handlePageChange(subjects.next_page_url || '')}
+                                    disabled={!subjects.next_page_url}
+                                >
+                                    <ChevronRight className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        </CardFooter>
+                    )}
                 </Card>
             </div>
-
             {/* Add Subject Modal */}
-            <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+            <Dialog
+                open={isAddModalOpen}
+                onOpenChange={(open) => {
+                    setIsAddModalOpen(open);
+                    if (open) {
+                        resetForm();
+                    }
+                }}
+            >
                 <DialogContent className="sm:max-w-md">
                     <DialogHeader>
                         <DialogTitle>Add New Subject</DialogTitle>
@@ -404,19 +507,20 @@ function SubjectPage() {
                             {errors.name && <p className="text-sm text-red-500">{errors.name}</p>}
                         </div>
                         <div className="flex flex-col gap-2">
-                            <Label htmlFor="courseId">Course</Label>
-                            <Select value={formData.courseId as string} onValueChange={(value) => handleSelectChange('courseId', value)}>
+                            <Label htmlFor="course_id">Course</Label>
+                            <Select value={formData.course_id as string} onValueChange={(value) => handleSelectChange('course_id', value)}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="Select a course" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {mockCourses.map((course) => (
+                                    {courses.map((course) => (
                                         <SelectItem key={course.id} value={course.id.toString()}>
                                             {course.course_code} - {course.name}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
+                            {errors.course_id && <p className="text-sm text-red-500">{errors.course_id}</p>}
                         </div>
                         <div className="flex flex-col gap-2">
                             <Label htmlFor="description">Description</Label>
@@ -428,6 +532,7 @@ function SubjectPage() {
                                 placeholder="Enter subject description"
                                 rows={3}
                             />
+                            {errors.description && <p className="text-sm text-red-500">{errors.description}</p>}
                         </div>
                     </div>
                     <DialogFooter>
@@ -440,13 +545,21 @@ function SubjectPage() {
                         >
                             Cancel
                         </Button>
-                        <Button onClick={handleAddSubject}>Save</Button>
+                        <Button onClick={handleAddSubject}>Add Subject</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
 
             {/* Edit Subject Modal */}
-            <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+            <Dialog
+                open={isEditModalOpen}
+                onOpenChange={(open) => {
+                    setIsEditModalOpen(open);
+                    if (!open) {
+                        resetForm();
+                    }
+                }}
+            >
                 <DialogContent className="sm:max-w-md">
                     <DialogHeader>
                         <DialogTitle>Edit Subject</DialogTitle>
@@ -493,19 +606,20 @@ function SubjectPage() {
                             {errors.name && <p className="text-sm text-red-500">{errors.name}</p>}
                         </div>
                         <div className="flex flex-col gap-2">
-                            <Label htmlFor="edit-courseId">Course</Label>
-                            <Select value={formData.courseId as string} onValueChange={(value) => handleSelectChange('courseId', value)}>
+                            <Label htmlFor="edit-course_id">Course</Label>
+                            <Select value={formData.course_id as string} onValueChange={(value) => handleSelectChange('course_id', value)}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="Select a course" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {mockCourses.map((course) => (
+                                    {courses.map((course) => (
                                         <SelectItem key={course.id} value={course.id.toString()}>
                                             {course.course_code} - {course.name}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
+                            {errors.course_id && <p className="text-sm text-red-500">{errors.course_id}</p>}
                         </div>
                         <div className="flex flex-col gap-2">
                             <Label htmlFor="edit-description">Description</Label>
@@ -517,6 +631,7 @@ function SubjectPage() {
                                 placeholder="Enter subject description"
                                 rows={3}
                             />
+                            {errors.description && <p className="text-sm text-red-500">{errors.description}</p>}
                         </div>
                     </div>
                     <DialogFooter>
