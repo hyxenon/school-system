@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Room;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
 class RoomController extends Controller
@@ -30,7 +31,12 @@ class RoomController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
+            'name' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('rooms')->where('building_id', $request->building_id),
+            ],
             'building_id' => 'required|exists:buildings,id',
         ]);
 

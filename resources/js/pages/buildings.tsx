@@ -5,13 +5,22 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+    Pagination,
+    PaginationContent,
+    PaginationEllipsis,
+    PaginationItem,
+    PaginationLink,
+    PaginationNext,
+    PaginationPrevious,
+} from '@/components/ui/pagination';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem, Building, Room } from '@/types';
 import { Head, router } from '@inertiajs/react';
-import { AlertCircle, Building as BuildingIcon, DoorOpen, Pencil, Plus, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { AlertCircle, Building as BuildingIcon, DoorOpen, Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { toast, Toaster } from 'sonner';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -22,8 +31,28 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 interface Props {
-    buildings: Building[];
-    rooms: Room[];
+    buildings: {
+        data: Building[];
+        current_page: number;
+        last_page: number;
+        per_page: number;
+        total: number;
+        from: number;
+        to: number;
+    };
+    rooms: {
+        data: Room[];
+        current_page: number;
+        last_page: number;
+        per_page: number;
+        total: number;
+        from: number;
+        to: number;
+    };
+    filters?: {
+        search?: string;
+        page?: number;
+    };
 }
 
 interface FormErrors {
@@ -31,12 +60,14 @@ interface FormErrors {
     building_id?: string;
 }
 
-export default function Index({ buildings, rooms }: Props) {
+export default function Index({ buildings, rooms, filters = {} }: Props) {
     const [activeTab, setActiveTab] = useState('buildings');
     const [buildingDialogOpen, setBuildingDialogOpen] = useState(false);
     const [roomDialogOpen, setRoomDialogOpen] = useState(false);
     const [selectedBuilding, setSelectedBuilding] = useState<Building | null>(null);
     const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
+    const [searchTerm, setSearchTerm] = useState(filters.search || '');
+    const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(filters.search || '');
 
     // Form state
     const [buildingName, setBuildingName] = useState('');
@@ -47,6 +78,41 @@ export default function Index({ buildings, rooms }: Props) {
     // Confirmation dialog
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [itemToDelete, setItemToDelete] = useState<{ type: 'building' | 'room'; item: Building | Room } | null>(null);
+
+    // Debounce search term
+    useEffect(() => {
+        const timerId = setTimeout(() => {
+            setDebouncedSearchTerm(searchTerm);
+        }, 300);
+
+        return () => {
+            clearTimeout(timerId);
+        };
+    }, [searchTerm]);
+
+    // Apply filters when debounced search term changes
+    useEffect(() => {
+        if (debouncedSearchTerm !== filters.search) {
+            applyFilters({ search: debouncedSearchTerm, page: 1 });
+        }
+    }, [debouncedSearchTerm]);
+
+    // Handle pagination
+    const handlePageChange = (page: number) => {
+        applyFilters({ search: searchTerm, page });
+    };
+
+    // Apply filters function
+    const applyFilters = (newFilters: { search?: string; page?: number }) => {
+        router.get(
+            '/buildings',
+            { ...newFilters },
+            {
+                preserveState: true,
+                replace: true,
+            },
+        );
+    };
 
     // Building form handlers
     const handleAddBuilding = () => {
@@ -112,7 +178,10 @@ export default function Index({ buildings, rooms }: Props) {
                 {
                     onSuccess: () => {
                         setBuildingDialogOpen(false);
-                        toast.success('Building updated successfully');
+                        toast.success(`${buildingName} updated successfully`);
+                    },
+                    onError: () => {
+                        toast.warning('Building already exists');
                     },
                 },
             );
@@ -125,7 +194,10 @@ export default function Index({ buildings, rooms }: Props) {
                 {
                     onSuccess: () => {
                         setBuildingDialogOpen(false);
-                        toast.success('Building added successfully');
+                        toast.success(`${buildingName} added successfully`);
+                    },
+                    onError: () => {
+                        toast.warning('Building already exists');
                     },
                 },
             );
@@ -159,7 +231,10 @@ export default function Index({ buildings, rooms }: Props) {
                 {
                     onSuccess: () => {
                         setRoomDialogOpen(false);
-                        toast.success('Room updated successfully');
+                        toast.success(`${roomName} updated successfully`);
+                    },
+                    onError: () => {
+                        toast.warning('Room already exists');
                     },
                 },
             );
@@ -173,7 +248,10 @@ export default function Index({ buildings, rooms }: Props) {
                 {
                     onSuccess: () => {
                         setRoomDialogOpen(false);
-                        toast.success('Room added successfully');
+                        toast.success(`${roomName} Added successfully`);
+                    },
+                    onError: () => {
+                        toast.warning('Room already exists');
                     },
                 },
             );
@@ -187,16 +265,82 @@ export default function Index({ buildings, rooms }: Props) {
             if (itemToDelete.type === 'building') {
                 router.delete(`/buildings/${itemToDelete.item.id}`, {
                     onSuccess: () => {
-                        toast.success('Building deleted successfully');
+                        toast.success(`${itemToDelete.item.name} deleted successfully`);
                     },
                 });
             } else {
-                // Would be handled by your controller
-                console.log('Delete room:', itemToDelete.item);
+                router.delete(`/rooms/${itemToDelete.item.id}`, {
+                    onSuccess: () => {
+                        toast.success(`${itemToDelete.item.name} deleted successfully`);
+                    },
+                });
             }
         }
         setDeleteDialogOpen(false);
         setItemToDelete(null);
+    };
+
+    // Render pagination
+    const renderPagination = (data: { current_page: number; last_page: number }) => {
+        if (data.last_page <= 1) return null;
+
+        return (
+            <Pagination className="mt-4">
+                <PaginationContent>
+                    <PaginationItem>
+                        <PaginationPrevious
+                            onClick={() => data.current_page > 1 && handlePageChange(data.current_page - 1)}
+                            className={data.current_page <= 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                        />
+                    </PaginationItem>
+
+                    {Array.from({ length: Math.min(5, data.last_page) }, (_, i) => {
+                        let pageNumber;
+
+                        // Logic to determine which page numbers to show
+                        if (data.last_page <= 5) {
+                            // Show all pages if 5 or fewer
+                            pageNumber = i + 1;
+                        } else if (data.current_page <= 3) {
+                            // Show first 5 pages
+                            pageNumber = i + 1;
+                        } else if (data.current_page >= data.last_page - 2) {
+                            // Show last 5 pages
+                            pageNumber = data.last_page - 4 + i;
+                        } else {
+                            // Show 2 pages before and after current page
+                            pageNumber = data.current_page - 2 + i;
+                        }
+
+                        return (
+                            <PaginationItem key={`page-${pageNumber}`}>
+                                <PaginationLink onClick={() => handlePageChange(pageNumber)} isActive={pageNumber === data.current_page}>
+                                    {pageNumber}
+                                </PaginationLink>
+                            </PaginationItem>
+                        );
+                    })}
+
+                    {data.last_page > 5 && data.current_page < data.last_page - 2 && (
+                        <>
+                            <PaginationItem>
+                                <PaginationEllipsis />
+                            </PaginationItem>
+                            <PaginationItem>
+                                <PaginationLink onClick={() => handlePageChange(data.last_page)}>{data.last_page}</PaginationLink>
+                            </PaginationItem>
+                        </>
+                    )}
+
+                    <PaginationItem>
+                        <PaginationNext
+                            onClick={() => data.current_page < data.last_page && handlePageChange(data.current_page + 1)}
+                            className={data.current_page >= data.last_page ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                        />
+                    </PaginationItem>
+                </PaginationContent>
+            </Pagination>
+        );
     };
 
     return (
@@ -230,61 +374,77 @@ export default function Index({ buildings, rooms }: Props) {
                         )}
                     </div>
 
+                    {/* Search Box */}
+                    <div className="relative mb-4">
+                        <Search className="text-muted-foreground absolute top-2.5 left-3 h-4 w-4" />
+                        <Input placeholder="Search..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
+                    </div>
+
                     <TabsContent value="buildings" className="mt-0">
                         <Card>
                             <CardHeader>
                                 <CardTitle>Buildings</CardTitle>
-                                <CardDescription>Manage all buildings in your Wistleyan University.</CardDescription>
+                                <CardDescription>
+                                    Manage all buildings in your Wistleyan University.
+                                    {buildings.total > 0 && (
+                                        <span className="ml-2">{/* Showing {buildings.from}-{buildings.to} of {buildings.total} items */}</span>
+                                    )}
+                                </CardDescription>
                             </CardHeader>
                             <CardContent>
-                                {buildings.length === 0 ? (
+                                {buildings.data.length === 0 ? (
                                     <div className="text-muted-foreground py-6 text-center">
-                                        No buildings found. Click "Add Building" to create one.
+                                        {searchTerm
+                                            ? `No buildings matching "${searchTerm}" found.`
+                                            : 'No buildings found. Click "Add Building" to create one.'}
                                     </div>
                                 ) : (
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead>ID</TableHead>
-                                                <TableHead>Name</TableHead>
-                                                <TableHead>Created At</TableHead>
-                                                <TableHead>Updated At</TableHead>
-                                                <TableHead className="w-32 text-right">Actions</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {buildings.map((building) => (
-                                                <TableRow key={building.id}>
-                                                    <TableCell>{building.id}</TableCell>
-                                                    <TableCell className="font-medium">{building.name}</TableCell>
-                                                    <TableCell>{new Date(building.created_at).toLocaleDateString()}</TableCell>
-                                                    <TableCell>{new Date(building.updated_at).toLocaleDateString()}</TableCell>
-                                                    <TableCell className="text-right">
-                                                        <div className="flex justify-end gap-2">
-                                                            <Button
-                                                                variant="outline"
-                                                                size="sm"
-                                                                className="h-8 px-2"
-                                                                onClick={() => handleEditBuilding(building)}
-                                                            >
-                                                                <Pencil className="h-4 w-4" />
-                                                                <span className="sr-only">Edit</span>
-                                                            </Button>
-                                                            <Button
-                                                                variant="outline"
-                                                                size="sm"
-                                                                className="text-destructive hover:bg-destructive/10 h-8 px-2"
-                                                                onClick={() => handleDeleteBuilding(building)}
-                                                            >
-                                                                <Trash2 className="h-4 w-4" />
-                                                                <span className="sr-only">Delete</span>
-                                                            </Button>
-                                                        </div>
-                                                    </TableCell>
+                                    <>
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead>ID</TableHead>
+                                                    <TableHead>Name</TableHead>
+                                                    <TableHead>Created At</TableHead>
+                                                    <TableHead>Updated At</TableHead>
+                                                    <TableHead className="w-32 text-right">Actions</TableHead>
                                                 </TableRow>
-                                            ))}
-                                        </TableBody>
-                                    </Table>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {buildings.data.map((building) => (
+                                                    <TableRow key={building.id}>
+                                                        <TableCell>{building.id}</TableCell>
+                                                        <TableCell className="font-medium">{building.name}</TableCell>
+                                                        <TableCell>{new Date(building.created_at).toLocaleDateString()}</TableCell>
+                                                        <TableCell>{new Date(building.updated_at).toLocaleDateString()}</TableCell>
+                                                        <TableCell className="text-right">
+                                                            <div className="flex justify-end gap-2">
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    className="h-8 px-2"
+                                                                    onClick={() => handleEditBuilding(building)}
+                                                                >
+                                                                    <Pencil className="h-4 w-4" />
+                                                                    <span className="sr-only">Edit</span>
+                                                                </Button>
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    className="text-destructive hover:bg-destructive/10 h-8 px-2"
+                                                                    onClick={() => handleDeleteBuilding(building)}
+                                                                >
+                                                                    <Trash2 className="h-4 w-4" />
+                                                                    <span className="sr-only">Delete</span>
+                                                                </Button>
+                                                            </div>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                        {renderPagination(buildings)}
+                                    </>
                                 )}
                             </CardContent>
                         </Card>
@@ -294,57 +454,65 @@ export default function Index({ buildings, rooms }: Props) {
                         <Card>
                             <CardHeader>
                                 <CardTitle>Rooms</CardTitle>
-                                <CardDescription>Manage all rooms across your buildings.</CardDescription>
+                                <CardDescription>
+                                    Manage all rooms across your buildings.
+                                    {rooms.total > 0 && <span className="ml-2">{/* Showing {rooms.from}-{rooms.to} of {rooms.total} items */}</span>}
+                                </CardDescription>
                             </CardHeader>
                             <CardContent>
-                                {rooms.length === 0 ? (
-                                    <div className="text-muted-foreground py-6 text-center">No rooms found. Click "Add Room" to create one.</div>
+                                {rooms.data.length === 0 ? (
+                                    <div className="text-muted-foreground py-6 text-center">
+                                        {searchTerm ? `No rooms matching "${searchTerm}" found.` : 'No rooms found. Click "Add Room" to create one.'}
+                                    </div>
                                 ) : (
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead>ID</TableHead>
-                                                <TableHead>Name</TableHead>
-                                                <TableHead>Building</TableHead>
-                                                <TableHead>Created At</TableHead>
-                                                <TableHead>Updated At</TableHead>
-                                                <TableHead className="w-32 text-right">Actions</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {rooms.map((room) => (
-                                                <TableRow key={room.id}>
-                                                    <TableCell>{room.id}</TableCell>
-                                                    <TableCell className="font-medium">{room.name}</TableCell>
-                                                    <TableCell>{room.building.name}</TableCell>
-                                                    <TableCell>{new Date(room.created_at).toLocaleDateString()}</TableCell>
-                                                    <TableCell>{new Date(room.updated_at).toLocaleDateString()}</TableCell>
-                                                    <TableCell className="text-right">
-                                                        <div className="flex justify-end gap-2">
-                                                            <Button
-                                                                variant="outline"
-                                                                size="sm"
-                                                                className="h-8 px-2"
-                                                                onClick={() => handleEditRoom(room)}
-                                                            >
-                                                                <Pencil className="h-4 w-4" />
-                                                                <span className="sr-only">Edit</span>
-                                                            </Button>
-                                                            <Button
-                                                                variant="outline"
-                                                                size="sm"
-                                                                className="text-destructive hover:bg-destructive/10 h-8 px-2"
-                                                                onClick={() => handleDeleteRoom(room)}
-                                                            >
-                                                                <Trash2 className="h-4 w-4" />
-                                                                <span className="sr-only">Delete</span>
-                                                            </Button>
-                                                        </div>
-                                                    </TableCell>
+                                    <>
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead>ID</TableHead>
+                                                    <TableHead>Name</TableHead>
+                                                    <TableHead>Building</TableHead>
+                                                    <TableHead>Created At</TableHead>
+                                                    <TableHead>Updated At</TableHead>
+                                                    <TableHead className="w-32 text-right">Actions</TableHead>
                                                 </TableRow>
-                                            ))}
-                                        </TableBody>
-                                    </Table>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {rooms.data.map((room) => (
+                                                    <TableRow key={room.id}>
+                                                        <TableCell>{room.id}</TableCell>
+                                                        <TableCell className="font-medium">{room.name}</TableCell>
+                                                        <TableCell>{room.building.name}</TableCell>
+                                                        <TableCell>{new Date(room.created_at).toLocaleDateString()}</TableCell>
+                                                        <TableCell>{new Date(room.updated_at).toLocaleDateString()}</TableCell>
+                                                        <TableCell className="text-right">
+                                                            <div className="flex justify-end gap-2">
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    className="h-8 px-2"
+                                                                    onClick={() => handleEditRoom(room)}
+                                                                >
+                                                                    <Pencil className="h-4 w-4" />
+                                                                    <span className="sr-only">Edit</span>
+                                                                </Button>
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    className="text-destructive hover:bg-destructive/10 h-8 px-2"
+                                                                    onClick={() => handleDeleteRoom(room)}
+                                                                >
+                                                                    <Trash2 className="h-4 w-4" />
+                                                                    <span className="sr-only">Delete</span>
+                                                                </Button>
+                                                            </div>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                        {renderPagination(rooms)}
+                                    </>
                                 )}
                             </CardContent>
                         </Card>
@@ -422,7 +590,7 @@ export default function Index({ buildings, rooms }: Props) {
                                     <option value="" disabled>
                                         Select a building
                                     </option>
-                                    {buildings.map((building) => (
+                                    {buildings.data.map((building) => (
                                         <option key={building.id} value={building.id}>
                                             {building.name}
                                         </option>

@@ -12,16 +12,36 @@ class BuildingController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    // BuildingsController.php
+    public function index(Request $request)
     {
-        $buildings = Building::all();
-        $rooms = Room::with('building')->get();
+        $search = $request->input('search');
+        $perPage = 10;
 
+        $buildings = Building::query()
+            ->when($search, function ($query, $search) {
+                return $query->where('name', 'LIKE', "%{$search}%");
+            })
+            ->orderBy('id', 'desc')
+            ->paginate($perPage)
+            ->withQueryString();
 
+        $rooms = Room::query()
+            ->with('building')
+            ->when($search, function ($query, $search) {
+                return $query->where('name', 'LIKE', "%{$search}%")
+                    ->orWhereHas('building', function ($query) use ($search) {
+                        $query->where('name', 'LIKE', "%{$search}%");
+                    });
+            })
+            ->orderBy('id', 'desc')
+            ->paginate($perPage)
+            ->withQueryString();
 
         return Inertia::render('buildings', [
             'buildings' => $buildings,
-            'rooms' => $rooms
+            'rooms' => $rooms,
+            'filters' => $request->only(['search', 'page'])
         ]);
     }
 
@@ -33,7 +53,7 @@ class BuildingController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
+            'name' => 'required|string|max:255|unique:buildings,name',
         ]);
 
         $building = Building::create($validated);
@@ -49,7 +69,7 @@ class BuildingController extends Controller
     public function update(Request $request, Building $building)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
+            'name' => 'required|string|max:255|unique:buildings,name',
         ]);
 
         $building->update($validated);

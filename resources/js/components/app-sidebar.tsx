@@ -95,7 +95,7 @@ export function AppSidebar() {
     const navItems = [...mainNavItems, ...roleNavItems];
 
     return (
-        <Sidebar collapsible="icon" variant="inset">
+        <Sidebar collapsible="icon" variant="floating">
             <SidebarHeader>
                 <SidebarMenu>
                     <SidebarMenuItem>
