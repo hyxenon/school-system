@@ -83,3 +83,14 @@ export interface Room {
     created_at: string;
     updated_at: string;
 }
+
+export interface Subject {
+    id: number;
+    code: string;
+    name: string;
+    course?: Course;
+    credits: number;
+    description: string;
+    created_at: string;
+    updated_at: string;
+}
