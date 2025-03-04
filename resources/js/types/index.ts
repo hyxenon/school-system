@@ -64,6 +64,7 @@ export interface Course {
     id: number;
     name: string;
     description?: string;
+    department_id: number;
     course_code: string;
     created_at: string;
     updated_at: string;
@@ -91,6 +92,16 @@ export interface Subject {
     course?: Course;
     credits: number;
     description: string;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface Curriculum {
+    id: number;
+    course: Course;
+    year_level: number;
+    semester: number;
+    subjects: Subject[];
     created_at: string;
     updated_at: string;
 }
