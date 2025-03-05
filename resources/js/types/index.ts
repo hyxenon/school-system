@@ -50,6 +50,15 @@ export interface Employee {
     isActive: boolean;
 }
 
+export interface Student {
+    id: string;
+    user: User;
+    course: Course;
+    year_level: number;
+    created_at: string;
+    updated_at: string;
+}
+
 export interface Department {
     id: number;
     department_code: string;
@@ -102,6 +111,26 @@ export interface Curriculum {
     year_level: number;
     semester: number;
     subjects: Subject[];
+    created_at: string;
+    updated_at: string;
+}
+
+export interface Schedule {
+    id: number;
+    subject: Subject;
+    room: Room;
+    professor: Employee;
+    students: Student[];
+    year_level: number;
+    block: string;
+    academic_year: string;
+    semester: 1 | 2 | 3;
+    schedule_type: 'Lecture' | 'Laboratory' | 'Hybrid';
+    day: 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday' | 'Sunday';
+    start_time: string;
+    end_time: string;
+    max_students: number;
+    status: 'Active' | 'Inactive' | 'Cancelled';
     created_at: string;
     updated_at: string;
 }
