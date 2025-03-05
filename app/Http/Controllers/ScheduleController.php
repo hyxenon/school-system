@@ -12,15 +12,42 @@ use Illuminate\Http\Request;
 
 class ScheduleController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $schedules = Schedule::with([
+        $query = Schedule::with([
             'subject',
             'room.building',
             'professor.user'
-        ])->get();
+        ]);
 
+        // Server-side filtering if needed
+        if ($request->has('subject_id')) {
+            $query->where('subject_id', $request->subject_id);
+        }
 
+        if ($request->has('room_id')) {
+            $query->where('room_id', $request->room_id);
+        }
+
+        if ($request->has('day')) {
+            $query->where('day', $request->day);
+        }
+
+        if ($request->has('search')) {
+            $search = $request->search;
+            $query->whereHas('subject', function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%");
+            })
+                ->orWhereHas('professor.user', function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%");
+                })
+                ->orWhereHas('room', function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%");
+                })
+                ->orWhere('day', 'like', "%{$search}%");
+        }
+
+        $schedules = $query->get();
 
         return Inertia::render('schedule', props: [
             'schedules' => $schedules,
