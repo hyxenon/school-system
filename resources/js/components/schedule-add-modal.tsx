@@ -1,9 +1,11 @@
+'use client';
+
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Building, Employee, Room, Subject } from '@/types';
+import type { Building, Employee, Room, Subject } from '@/types';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from '@inertiajs/react';
 import { Plus, Search, X } from 'lucide-react';
@@ -11,6 +13,12 @@ import { useMemo, useState } from 'react';
 import { useForm as useHookForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import * as z from 'zod';
+
+declare global {
+    interface Window {
+        route: any;
+    }
+}
 
 const scheduleSchema = z
     .object({
@@ -47,7 +55,7 @@ export function ScheduleCreateModal({ subjects = [], professors = [], rooms = []
     const [professorSearch, setProfessorSearch] = useState('');
     const [buildingSearch, setBuildingSearch] = useState('');
     const [roomSearch, setRoomSearch] = useState('');
-    const { post, processing } = useForm({});
+    const inertiaForm = useForm();
 
     const form = useHookForm<z.infer<typeof scheduleSchema>>({
         resolver: zodResolver(scheduleSchema),
@@ -86,28 +94,46 @@ export function ScheduleCreateModal({ subjects = [], professors = [], rooms = []
     // Filter rooms based on selected building
     const filteredRooms = useMemo(() => {
         // Get the building_id from the form
-        const selectedBuildingId = form.getValues('building_id');
+        const selectedBuildingId = form.watch('building_id');
 
         return rooms.filter(
             (room) =>
                 (selectedBuildingId ? room.building_id === selectedBuildingId : true) &&
                 (room.name.toLowerCase().includes(roomSearch.toLowerCase()) || room.building.name.toLowerCase().includes(roomSearch.toLowerCase())),
         );
-    }, [rooms, roomSearch, form.getValues('building_id')]);
+    }, [rooms, roomSearch, form.watch]);
 
     const onSubmit = (values: z.infer<typeof scheduleSchema>) => {
-        post(route('schedules.store'), {
-            ...values,
+        // Create a new object without building_id
+        const { building_id, ...scheduleData } = values;
+
+        // Log the data being sent
+        console.log('Form data being submitted:', scheduleData);
+
+        // Use Inertia's form submission correctly
+        inertiaForm.clearErrors();
+        inertiaForm.transform((data) => ({
+            ...data,
+            ...scheduleData,
+        }));
+
+        inertiaForm.post(window.route('schedules.store'), {
+            preserveScroll: true,
             onSuccess: () => {
+                console.log('Form submitted successfully');
                 toast.success('Schedule created successfully');
                 setOpen(false);
                 form.reset();
             },
-            onError: (error) => {
-                if (error.conflict) {
-                    toast.error(error.conflict);
+            onError: (errors) => {
+                console.error('Form submission errors:', errors);
+
+                if (errors.conflict) {
+                    toast.error(errors.conflict);
                 } else {
-                    toast.error('Failed to create schedule');
+                    // Show all validation errors
+                    const errorMessages = Object.values(errors).join(', ');
+                    toast.error(`Failed to create schedule: ${errorMessages}`);
                 }
             },
         });
@@ -556,7 +582,7 @@ export function ScheduleCreateModal({ subjects = [], professors = [], rooms = []
                             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
                                 Cancel
                             </Button>
-                            <Button type="submit" disabled={processing}>
+                            <Button type="submit" disabled={inertiaForm.processing}>
                                 Create Schedule
                             </Button>
                         </div>

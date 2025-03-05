@@ -134,3 +134,18 @@ export interface Schedule {
     created_at: string;
     updated_at: string;
 }
+
+export interface Announcements {
+    id: number;
+    title: string;
+    content: string;
+    type: 'general' | 'academic' | 'administrative' | 'emergency';
+    user_id: User;
+    department_id?: Department;
+    starts_at?: string;
+    ends_at?: string;
+    is_pinned: boolean;
+    visibility: 'all' | 'students' | 'teachers' | 'staff';
+    created_at: string;
+    updated_at: string;
+}

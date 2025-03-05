@@ -24,7 +24,7 @@ class ScheduleController extends Controller
 
         return Inertia::render('schedule', props: [
             'schedules' => $schedules,
-            'subjects' => Subject::select('id', 'name')->get(), // Explicitly select needed fields
+            'subjects' => Subject::select('id', 'name')->get(),
             'professors' => Employee::with('user:id,name')->get(),
             'rooms' => Room::with('building:id,name')->get(),
             'buildings' => Building::all(),
@@ -48,7 +48,7 @@ class ScheduleController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'subject_id' => 'required|exists:subjects,id',
             'room_id' => 'required|exists:rooms,id',
             'professor_id' => 'required|exists:employees,id',
@@ -86,10 +86,13 @@ class ScheduleController extends Controller
             return back()->withErrors(['conflict' => 'The schedule conflicts with an existing schedule.']);
         }
 
-        Schedule::create($request->all());
+
+        Schedule::create($validated);
 
         return redirect()->route('schedules.index')->with('success', 'Schedule created successfully.');
     }
+
+
 
     public function edit($id)
     {

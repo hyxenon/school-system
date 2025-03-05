@@ -23,7 +23,6 @@ return new class extends Migration
             $table->boolean('is_pinned')->default(false);
             $table->enum('visibility', ['all', 'students', 'teachers', 'staff'])->default('all');
             $table->timestamps();
-            $table->softDeletes();
         });
     }
 
