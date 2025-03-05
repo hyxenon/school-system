@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\BuildingController;
 use App\Http\Controllers\CourseController;
 use App\Http\Controllers\CurriculumController;
@@ -37,6 +38,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/curriculum/{curriculum}', [CurriculumController::class, 'destroy'])->name('curriculum.destroy');
     Route::get('/api/curriculum/subjects', [CurriculumController::class, 'getSubjects']);
     Route::resource('schedules', ScheduleController::class);
+    Route::resource('announcements', AnnouncementController::class);
 });
 
 

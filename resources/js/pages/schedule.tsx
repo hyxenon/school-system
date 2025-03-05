@@ -47,7 +47,7 @@ export default function SchedulesIndex({ schedules, subjects, professors, rooms,
             <Head title="Schedules" />
             <Toaster />
 
-            <div className="space-y-6">
+            <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
                 <div className="flex items-center justify-between">
                     <h1 className="text-2xl font-bold">Schedules</h1>
                     {/* Replace the previous Button with the ScheduleCreateModal */}

@@ -4,7 +4,7 @@ import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { SharedData, type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { BookA, BookOpen, BriefcaseBusiness, BuildingIcon, CalendarIcon, CurlyBracesIcon, LayoutGrid } from 'lucide-react';
+import { BookA, BookOpen, BriefcaseBusiness, BuildingIcon, CalendarIcon, CurlyBracesIcon, LayoutGrid, Mic } from 'lucide-react';
 import AppLogo from './app-logo';
 
 const roleBasedNavItems: Record<string, NavItem[]> = {
@@ -39,6 +39,11 @@ const roleBasedNavItems: Record<string, NavItem[]> = {
             title: 'Schedules',
             url: '/schedules',
             icon: CalendarIcon,
+        },
+        {
+            title: 'Announcements',
+            url: '/announcements',
+            icon: Mic,
         },
     ],
     professor: [
