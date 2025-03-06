@@ -29,4 +29,14 @@ class Subject extends Model
     {
         return $this->belongsToMany(Curriculum::class, 'curriculum_subject');
     }
+
+    public function grades()
+    {
+        return $this->hasMany(Grade::class);
+    }
+
+    public function assignments()
+    {
+        return $this->hasMany(Assignment::class);
+    }
 }

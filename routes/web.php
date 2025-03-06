@@ -6,6 +6,7 @@ use App\Http\Controllers\CourseController;
 use App\Http\Controllers\CurriculumController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\EnrollmentController;
 use App\Http\Controllers\RoomController;
 use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\SubjectController;
@@ -29,6 +30,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::resource('employees', EmployeeController::class);
     Route::post('/employees/{employee}/toggle-active', [EmployeeController::class, 'toggleActive']);
+    Route::resource('enrollment', EnrollmentController::class);
     Route::resource('departments', DepartmentController::class);
     Route::resource('courses', CourseController::class);
     Route::resource('buildings', BuildingController::class);

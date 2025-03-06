@@ -50,11 +50,80 @@ export interface Employee {
     isActive: boolean;
 }
 
+export interface Enrollment {
+    id: number;
+    student: Student;
+    course: Course;
+    department: Department;
+    academic_year: string;
+    semester: 1 | 2 | 3;
+    enrollment_date: string;
+    status: 'Enrolled' | 'Pending' | 'Cancelled';
+    created_at: string;
+    updated_at: string;
+    payment_status: 'Pending' | 'Completed';
+}
+
 export interface Student {
     id: string;
     user: User;
     course: Course;
     year_level: number;
+    block: number;
+    status: 'Regular' | 'Irregular';
+    enrollment_status: 'Enrolled' | 'Not Enrolled' | 'Graduated' | 'Dropped Out';
+    created_at: string;
+    updated_at: string;
+    grades?: Grade[];
+    assignments?: AssignmentSubmission[];
+    payments?: Payment[];
+}
+
+export interface Grade {
+    id: number;
+    student: Student;
+    subject: Subject;
+    prelims: number;
+    midterms: number;
+    finals: number;
+    overall_grade?: number;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface Payment {
+    id: number;
+    student: Student;
+    amount: number;
+    payment_method: 'Cash' | 'Bank Transfer' | 'Online';
+    payment_date: string;
+    status: 'Pending' | 'Completed' | 'Failed';
+    created_at: string;
+    updated_at: string;
+}
+
+export interface Assignment {
+    id: number;
+    subject: Subject;
+    title: string;
+    description: string;
+    due_date: string;
+    year_level: number;
+    block: number;
+    student_submissions: AssignmentSubmission[];
+    assessment_type: 'prelims' | 'midterms' | 'finals';
+    created_by: Employee;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface AssignmentSubmission {
+    id: number;
+    assignment: Assignment;
+    student: Student;
+    submission_date: string;
+    grade?: number;
+    feedback?: string;
     created_at: string;
     updated_at: string;
 }
