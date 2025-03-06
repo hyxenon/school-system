@@ -67,6 +67,7 @@ function AnnouncementPage({ announcements = [], departments = [] }: Announcement
     const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
     const [activeTab, setActiveTab] = useState('all');
     const [isPinnedChecked, setIsPinnedChecked] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Setup form with react-hook-form and zod validation
     const form = useForm<AnnouncementFormValues>({
@@ -135,6 +136,7 @@ function AnnouncementPage({ announcements = [], departments = [] }: Announcement
     };
 
     const onSubmit = (values: AnnouncementFormValues) => {
+        setIsSubmitting(true);
         if (editingAnnouncement) {
             router.put(
                 `/announcements/${editingAnnouncement.id}`,
@@ -147,6 +149,7 @@ function AnnouncementPage({ announcements = [], departments = [] }: Announcement
                         toast.success('Announcement updated successfully');
                         closeModal();
                         router.reload({ only: ['announcements'] });
+                        setIsSubmitting(false);
                     },
                     onError: (errors) => {
                         toast.error('Failed to update announcement');
@@ -157,6 +160,7 @@ function AnnouncementPage({ announcements = [], departments = [] }: Announcement
                                 message: errors[key],
                             });
                         });
+                        setIsSubmitting(false);
                     },
                 },
             );
@@ -166,6 +170,7 @@ function AnnouncementPage({ announcements = [], departments = [] }: Announcement
                     toast.success('Announcement created successfully');
                     closeModal();
                     router.reload({ only: ['announcements'] });
+                    setIsSubmitting(false);
                 },
                 onError: (errors) => {
                     toast.error('Failed to create announcement');
@@ -176,6 +181,7 @@ function AnnouncementPage({ announcements = [], departments = [] }: Announcement
                             message: errors[key],
                         });
                     });
+                    setIsSubmitting(false);
                 },
             });
         }
@@ -565,8 +571,8 @@ function AnnouncementPage({ announcements = [], departments = [] }: Announcement
                                     <Button type="button" variant="outline" onClick={closeModal}>
                                         Cancel
                                     </Button>
-                                    <Button type="submit" disabled={form.formState.isSubmitting}>
-                                        {form.formState.isSubmitting ? 'Saving...' : editingAnnouncement ? 'Update' : 'Create'}
+                                    <Button type="submit" disabled={isSubmitting}>
+                                        {isSubmitting ? 'Saving...' : editingAnnouncement ? 'Update' : 'Create'}
                                     </Button>
                                 </DialogFooter>
                             </form>
@@ -587,7 +593,7 @@ function AnnouncementPage({ announcements = [], departments = [] }: Announcement
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
                             <AlertDialogAction
                                 onClick={() => confirmDelete !== null && handleDelete(confirmDelete)}
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                className="bg-destructive hover:bg-destructive/90 text-white"
                             >
                                 Delete
                             </AlertDialogAction>
