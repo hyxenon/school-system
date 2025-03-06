@@ -38,7 +38,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/curriculum/{curriculum}', [CurriculumController::class, 'destroy'])->name('curriculum.destroy');
     Route::get('/api/curriculum/subjects', [CurriculumController::class, 'getSubjects']);
     Route::resource('schedules', ScheduleController::class);
+
+
     Route::resource('announcements', AnnouncementController::class);
+    Route::put('announcements/{announcement}/pin', [AnnouncementController::class, 'togglePin'])->name('announcements.pin');
 });
 
 

@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Announcement;
 use App\Models\Department;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
+
 
 class AnnouncementController extends Controller
 {
@@ -14,10 +16,8 @@ class AnnouncementController extends Controller
      */
     public function index()
     {
-
         $departments = Department::all();
-        $announcements = Announcement::all();
-
+        $announcements = Announcement::with('department')->latest()->get();
 
         return Inertia::render('announcement', [
             'departments' => $departments,
@@ -26,35 +26,26 @@ class AnnouncementController extends Controller
     }
 
     /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
      * Store a newly created resource in storage.
      */
     public function store(Request $request)
     {
-        //
-    }
+        $validated = $request->validate([
+            'title' => 'required|string|max:100',
+            'content' => 'required|string',
+            'type' => 'required|in:general,academic,administrative,emergency',
+            'department_id' => 'nullable|exists:departments,id',
+            'starts_at' => 'nullable|date',
+            'ends_at' => 'nullable|date|after_or_equal:starts_at',
+            'is_pinned' => 'boolean',
+            'visibility' => 'required|in:all,students,teachers,staff',
+        ]);
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(Announcement $announcement)
-    {
-        //
-    }
+        $validated['user_id'] = Auth::user()->id;
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Announcement $announcement)
-    {
-        //
+        $announcement = Announcement::create($validated);
+
+        return redirect()->back()->with('success', 'Announcement created successfully.');
     }
 
     /**
@@ -62,7 +53,23 @@ class AnnouncementController extends Controller
      */
     public function update(Request $request, Announcement $announcement)
     {
-        //
+        $validated = $request->validate([
+            'title' => 'required|string|max:100',
+            'content' => 'required|string',
+            'type' => 'required|in:general,academic,administrative,emergency',
+            'department_id' => 'nullable|exists:departments,id',
+            'starts_at' => 'nullable|date',
+            'ends_at' => 'nullable|date|after_or_equal:starts_at',
+            'is_pinned' => 'boolean',
+            'visibility' => 'required|in:all,students,teachers,staff',
+        ]);
+
+        // Ensure is_pinned is always a boolean
+        $validated['is_pinned'] = $request->boolean('is_pinned');
+
+        $announcement->update($validated);
+
+        return redirect()->back()->with('success', 'Announcement updated successfully.');
     }
 
     /**
@@ -70,6 +77,18 @@ class AnnouncementController extends Controller
      */
     public function destroy(Announcement $announcement)
     {
-        //
+        $announcement->delete();
+
+        return redirect()->back()->with('success', 'Announcement deleted successfully.');
+    }
+
+    /**
+     * Toggle the pin status of the specified announcement.
+     */
+    public function togglePin(Announcement $announcement)
+    {
+        $announcement->update(['is_pinned' => !$announcement->is_pinned]);
+
+        return redirect()->back()->with('success', 'Announcement pin status updated successfully.');
     }
 }
