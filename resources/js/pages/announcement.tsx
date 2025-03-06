@@ -5,8 +5,25 @@ import type { Announcements, BreadcrumbItem, Department } from '@/types';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Head, router } from '@inertiajs/react';
 import { format } from 'date-fns';
-import { AlertTriangle, BookOpen, Building, Calendar, Clock, Edit, Info, Pin, PinOff, PlusCircle, Tag, Trash2, Users } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import {
+    AlertTriangle,
+    BookOpen,
+    Building,
+    Calendar,
+    ChevronLeft,
+    ChevronRight,
+    Clock,
+    Edit,
+    Info,
+    Pin,
+    PinOff,
+    PlusCircle,
+    Search,
+    Tag,
+    Trash2,
+    Users,
+} from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Toaster, toast } from 'sonner';
 import * as z from 'zod';
@@ -66,8 +83,10 @@ function AnnouncementPage({ announcements = [], departments = [] }: Announcement
     const [announcementsList, setAnnouncementsList] = useState<Announcements[]>(announcements);
     const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
     const [activeTab, setActiveTab] = useState('all');
-    const [isPinnedChecked, setIsPinnedChecked] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const itemsPerPage = 10;
 
     // Setup form with react-hook-form and zod validation
     const form = useForm<AnnouncementFormValues>({
@@ -88,10 +107,34 @@ function AnnouncementPage({ announcements = [], departments = [] }: Announcement
         setAnnouncementsList(announcements);
     }, [announcements]);
 
+    const filteredAnnouncements = useMemo(() => {
+        let filtered = activeTab === 'all' ? announcementsList : announcementsList.filter((a) => a.type === activeTab);
+
+        if (searchTerm) {
+            filtered = filtered.filter(
+                (announcement) =>
+                    announcement.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    announcement.content.toLowerCase().includes(searchTerm.toLowerCase()),
+            );
+        }
+
+        return filtered.sort((a, b) => {
+            if (a.is_pinned && !b.is_pinned) return -1;
+            if (!a.is_pinned && b.is_pinned) return 1;
+            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        });
+    }, [announcementsList, activeTab, searchTerm]);
+
+    const paginatedAnnouncements = useMemo(() => {
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        return filteredAnnouncements.slice(startIndex, startIndex + itemsPerPage);
+    }, [filteredAnnouncements, currentPage]);
+
+    const totalPages = Math.ceil(filteredAnnouncements.length / itemsPerPage);
+
     const openModal = (announcement?: Announcements) => {
         if (announcement) {
             setEditingAnnouncement(announcement);
-
             form.reset({
                 title: announcement.title,
                 content: announcement.content,
@@ -102,7 +145,6 @@ function AnnouncementPage({ announcements = [], departments = [] }: Announcement
                 is_pinned: announcement.is_pinned ? true : false,
                 visibility: announcement.visibility as any,
             });
-            setIsPinnedChecked(announcement.is_pinned);
         } else {
             setEditingAnnouncement(null);
             form.reset({
@@ -115,7 +157,6 @@ function AnnouncementPage({ announcements = [], departments = [] }: Announcement
                 is_pinned: false,
                 visibility: 'all',
             });
-            setIsPinnedChecked(false);
         }
         setIsOpen(true);
     };
@@ -133,7 +174,6 @@ function AnnouncementPage({ announcements = [], departments = [] }: Announcement
             is_pinned: false,
             visibility: 'all',
         });
-        setIsPinnedChecked(false);
     };
 
     const onSubmit = (values: AnnouncementFormValues) => {
@@ -143,7 +183,7 @@ function AnnouncementPage({ announcements = [], departments = [] }: Announcement
                 `/announcements/${editingAnnouncement.id}`,
                 {
                     ...values,
-                    is_pinned: values.is_pinned, // Send the value as is
+                    is_pinned: values.is_pinned ? true : false, // Ensure it's a boolean
                 } as any,
                 {
                     onSuccess: () => {
@@ -249,15 +289,6 @@ function AnnouncementPage({ announcements = [], departments = [] }: Announcement
         }
     };
 
-    const filteredAnnouncements = activeTab === 'all' ? announcementsList : announcementsList.filter((a) => a.type === activeTab);
-
-    // Sort announcements with pinned ones first
-    const sortedAnnouncements = [...filteredAnnouncements].sort((a, b) => {
-        if (a.is_pinned && !b.is_pinned) return -1;
-        if (!a.is_pinned && b.is_pinned) return 1;
-        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-    });
-
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Announcements" />
@@ -275,6 +306,16 @@ function AnnouncementPage({ announcements = [], departments = [] }: Announcement
                         </Button>
                     </CardHeader>
                     <CardContent>
+                        <div className="mb-4">
+                            <Input
+                                type="text"
+                                placeholder="Search announcements..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="max-w-sm"
+                                icon={<Search className="h-4 w-4" />}
+                            />
+                        </div>
                         <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab} className="w-full">
                             <TabsList className="mb-4 grid w-full grid-cols-5">
                                 <TabsTrigger value="all">All</TabsTrigger>
@@ -284,7 +325,7 @@ function AnnouncementPage({ announcements = [], departments = [] }: Announcement
                                 <TabsTrigger value="emergency">Emergency</TabsTrigger>
                             </TabsList>
                             <TabsContent value={activeTab} className="mt-0">
-                                {sortedAnnouncements.length === 0 ? (
+                                {paginatedAnnouncements.length === 0 ? (
                                     <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-8 text-center">
                                         <div className="bg-primary/10 rounded-full p-3">
                                             <Info className="text-primary h-6 w-6" />
@@ -298,7 +339,7 @@ function AnnouncementPage({ announcements = [], departments = [] }: Announcement
                                     </div>
                                 ) : (
                                     <div className="space-y-4">
-                                        {sortedAnnouncements.map((announcement) => (
+                                        {paginatedAnnouncements.map((announcement) => (
                                             <Card
                                                 key={announcement.id}
                                                 className={`overflow-hidden transition-all ${announcement.is_pinned ? 'border-primary/50 shadow-md' : ''}`}
@@ -382,6 +423,24 @@ function AnnouncementPage({ announcements = [], departments = [] }: Announcement
                                                 </CardContent>
                                             </Card>
                                         ))}
+                                    </div>
+                                )}
+                                {totalPages > 1 && (
+                                    <div className="mt-4 flex items-center justify-between">
+                                        <Button onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))} disabled={currentPage === 1}>
+                                            <ChevronLeft className="mr-2 h-4 w-4" />
+                                            Previous
+                                        </Button>
+                                        <span>
+                                            Page {currentPage} of {totalPages}
+                                        </span>
+                                        <Button
+                                            onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                                            disabled={currentPage === totalPages}
+                                        >
+                                            Next
+                                            <ChevronRight className="ml-2 h-4 w-4" />
+                                        </Button>
                                     </div>
                                 )}
                             </TabsContent>
@@ -552,13 +611,7 @@ function AnnouncementPage({ announcements = [], departments = [] }: Announcement
                                     render={({ field }) => (
                                         <FormItem className="flex flex-row items-start space-y-0 space-x-3 rounded-md border p-4">
                                             <FormControl>
-                                                <Checkbox
-                                                    checked={isPinnedChecked}
-                                                    onCheckedChange={(checked) => {
-                                                        setIsPinnedChecked(checked as boolean);
-                                                        field.onChange(checked);
-                                                    }}
-                                                />
+                                                <Checkbox checked={field.value} onCheckedChange={(checked) => field.onChange(checked)} />
                                             </FormControl>
                                             <div className="space-y-1 leading-none">
                                                 <FormLabel>Pin this announcement</FormLabel>
@@ -594,7 +647,7 @@ function AnnouncementPage({ announcements = [], departments = [] }: Announcement
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
                             <AlertDialogAction
                                 onClick={() => confirmDelete !== null && handleDelete(confirmDelete)}
-                                className="bg-destructive hover:bg-destructive/90 text-white"
+                                className="bg-destructive hover:bg-destructive/90 cursor-pointer text-white"
                             >
                                 Delete
                             </AlertDialogAction>
