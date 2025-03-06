@@ -91,6 +91,7 @@ function AnnouncementPage({ announcements = [], departments = [] }: Announcement
     const openModal = (announcement?: Announcements) => {
         if (announcement) {
             setEditingAnnouncement(announcement);
+
             form.reset({
                 title: announcement.title,
                 content: announcement.content,
@@ -98,7 +99,7 @@ function AnnouncementPage({ announcements = [], departments = [] }: Announcement
                 department_id: announcement.department_id as number | undefined,
                 starts_at: announcement.starts_at || '',
                 ends_at: announcement.ends_at || '',
-                is_pinned: announcement.is_pinned,
+                is_pinned: announcement.is_pinned ? true : false,
                 visibility: announcement.visibility as any,
             });
             setIsPinnedChecked(announcement.is_pinned);
