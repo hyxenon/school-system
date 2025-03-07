@@ -143,6 +143,7 @@ export interface Course {
     name: string;
     description?: string;
     department_id: number;
+    department: Department;
     course_code: string;
     created_at: string;
     updated_at: string;

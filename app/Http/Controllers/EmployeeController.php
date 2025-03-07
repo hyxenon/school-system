@@ -61,7 +61,8 @@ class EmployeeController extends Controller
                     'department_id' => $validated['department_id'],
                     'position' => $validated['position'],
                     'isActive' => true,
-                    'salary' => 40000
+                    'salary' => 40000,
+                    'type' => 'employee'
                 ]);
             });
 

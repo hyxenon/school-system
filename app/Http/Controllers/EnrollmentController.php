@@ -23,7 +23,7 @@ class EnrollmentController extends Controller
 
         $courses = Course::all();
         $departments = Department::all();
-        $students = Student::with(['user', 'course'])
+        $students = Student::with(['user', 'course', 'course.department'])
             ->where('enrollment_status', '!=', 'Enrolled')
             ->get();
 
@@ -189,8 +189,6 @@ class EnrollmentController extends Controller
     {
         $enrollment->load(['student.user', 'course', 'department']);
 
-        // Here you would implement PDF generation logic
-        // For example, using a package like barryvdh/laravel-dompdf
 
         return response()->download('path/to/generated/pdf');
     }

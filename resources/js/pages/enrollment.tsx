@@ -18,7 +18,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
-import type { BreadcrumbItem, Enrollment } from '@/types';
+import type { BreadcrumbItem, Course, Department, Enrollment, Student } from '@/types';
 import { Head, router, useForm } from '@inertiajs/react';
 import { CheckCircle2, Clock, Download, MoreHorizontal, Plus, Search, XCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -26,12 +26,20 @@ import { Toaster, toast } from 'sonner';
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Enrollment', href: '/enrollment' }];
 
-export default function EnrollmentPage({ enrollments, courses, departments, students, filters }) {
+interface EnrollmentPageProps {
+    enrollments: Enrollment[];
+    courses: Course[];
+    departments: Department[];
+    students: Student[];
+    filters: any;
+}
+
+export default function EnrollmentPage({ enrollments, courses, departments, students, filters }: EnrollmentPageProps) {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [currentEnrollment, setCurrentEnrollment] = useState<Enrollment | null>(null);
-
+    console.log(students);
     // Initialize filters from props
     const [searchQuery, setSearchQuery] = useState(filters?.search || '');
     const [statusFilter, setStatusFilter] = useState(filters?.status || 'all');

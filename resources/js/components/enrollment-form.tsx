@@ -1,9 +1,9 @@
 'use client';
-
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { Course, Department, Student } from '@/types';
+import { useState } from 'react';
 import type { EnrollmentFormData } from './enrollment-form-validation';
 
 interface EnrollmentFormProps {
@@ -27,6 +27,25 @@ export function EnrollmentForm({
     isEditMode = false,
     currentStudentName = '',
 }: EnrollmentFormProps) {
+    // Initialize studentCourse state
+    const [studentCourse, setStudentCourse] = useState('');
+    const [studentDepartment, setStudentDepartment] = useState('');
+
+    // Find the selected student course whenever student_id changes
+    const updateStudentCourse = (studentId: string) => {
+        const selectedStudent = students.find((student) => student.id === studentId);
+        if (selectedStudent) {
+            // Set course information
+            setStudentCourse(`${selectedStudent.course.name} (${selectedStudent.course.course_code})`);
+            setStudentDepartment(`${selectedStudent.course.department.name} (${selectedStudent.course.department.department_code})`);
+            // Also set the course_id in formData
+            updateFormData('course_id', selectedStudent.course.id.toString());
+            updateFormData('department_id', selectedStudent.course.department.id);
+        } else {
+            setStudentCourse('');
+            setStudentDepartment('');
+        }
+    };
     return (
         <div className="grid gap-4 py-4">
             {isEditMode ? (
@@ -42,7 +61,13 @@ export function EnrollmentForm({
                         Student <span className="text-red-500">*</span>
                     </Label>
                     <div className="col-span-3">
-                        <Select value={formData.student_id} onValueChange={(value) => updateFormData('student_id', value)}>
+                        <Select
+                            value={formData.student_id}
+                            onValueChange={(value) => {
+                                updateFormData('student_id', value);
+                                updateStudentCourse(value);
+                            }}
+                        >
                             <SelectTrigger className={errors.student_id ? 'border-red-500' : ''}>
                                 <SelectValue placeholder="Select student" />
                             </SelectTrigger>
@@ -64,40 +89,18 @@ export function EnrollmentForm({
                     Course <span className="text-red-500">*</span>
                 </Label>
                 <div className="col-span-3">
-                    <Select value={formData.course_id} onValueChange={(value) => updateFormData('course_id', value)}>
-                        <SelectTrigger className={errors.course_id ? 'border-red-500' : ''}>
-                            <SelectValue placeholder="Select course" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {courses.map((course) => (
-                                <SelectItem key={course.id} value={course.id.toString()}>
-                                    {course.name} ({course.course_code})
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                    <Input disabled={true} value={studentCourse} placeholder="Please select a student." />
                     {errors.course_id && <p className="mt-1 text-sm text-red-500">{errors.course_id}</p>}
                 </div>
             </div>
 
             <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="department_id" className="text-right">
+                <Label htmlFor="course_id" className="text-right">
                     Department <span className="text-red-500">*</span>
                 </Label>
                 <div className="col-span-3">
-                    <Select value={formData.department_id} onValueChange={(value) => updateFormData('department_id', value)}>
-                        <SelectTrigger className={errors.department_id ? 'border-red-500' : ''}>
-                            <SelectValue placeholder="Select department" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {departments.map((department) => (
-                                <SelectItem key={department.id} value={department.id.toString()}>
-                                    {department.name} ({department.department_code})
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                    {errors.department_id && <p className="mt-1 text-sm text-red-500">{errors.department_id}</p>}
+                    <Input disabled={true} value={studentDepartment} placeholder="Please select a student." />
+                    {errors.course_id && <p className="mt-1 text-sm text-red-500">{errors.department_id}</p>}
                 </div>
             </div>
 
