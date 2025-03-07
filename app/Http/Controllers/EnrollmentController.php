@@ -23,9 +23,7 @@ class EnrollmentController extends Controller
 
         $courses = Course::all();
         $departments = Department::all();
-        $students = Student::with(['user', 'course', 'course.department'])
-            ->where('enrollment_status', '!=', 'Enrolled')
-            ->get();
+        $students = Student::with(['user', 'course', 'course.department'])->get();
 
         return Inertia::render('enrollment', [
             'enrollments' => $enrollments,
@@ -36,28 +34,10 @@ class EnrollmentController extends Controller
         ]);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        $courses = Course::all();
-        $departments = Department::all();
-        $students = Student::with(['user', 'course'])
-            ->where('enrollment_status', '!=', 'Enrolled')
-            ->get();
-
-        return Inertia::render('enrollment/create', [
-            'courses' => $courses,
-            'departments' => $departments,
-            'students' => $students,
-        ]);
-    }
 
     /**
      * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+     */ public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'student_id' => 'required|exists:students,id',
@@ -73,13 +53,23 @@ class EnrollmentController extends Controller
             return back()->withErrors($validator)->withInput();
         }
 
+        // Check if there's already an enrollment for this student in the same semester and academic year
+        $existingEnrollment = Enrollment::where('student_id', $request->student_id)
+            ->where('semester', $request->semester)
+            ->where('academic_year', $request->academic_year)
+            ->first();
+
+        if ($existingEnrollment) {
+            return back()->with('error', 'This student is already enrolled for the selected semester and academic year.')
+                ->withInput();
+        }
+
         $enrollment = Enrollment::create([
             'student_id' => $request->student_id,
             'course_id' => $request->course_id,
             'department_id' => $request->department_id,
             'academic_year' => $request->academic_year,
             'semester' => $request->semester,
-            'enrollment_date' => now(),
             'status' => $request->status,
             'payment_status' => $request->payment_status,
         ]);
@@ -95,34 +85,6 @@ class EnrollmentController extends Controller
             ->with('success', 'Enrollment created successfully.');
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(Enrollment $enrollment)
-    {
-        $enrollment->load(['student.user', 'course', 'department']);
-
-        return Inertia::render('enrollment/show', [
-            'enrollment' => $enrollment,
-        ]);
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Enrollment $enrollment)
-    {
-        $enrollment->load(['student.user', 'course', 'department']);
-
-        $courses = Course::all();
-        $departments = Department::all();
-
-        return Inertia::render('enrollment/edit', [
-            'enrollment' => $enrollment,
-            'courses' => $courses,
-            'departments' => $departments,
-        ]);
-    }
 
     /**
      * Update the specified resource in storage.

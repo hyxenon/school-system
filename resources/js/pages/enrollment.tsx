@@ -309,7 +309,7 @@ export default function EnrollmentPage({ enrollments, courses, departments, stud
                                                         {enrollment.payment_status}
                                                     </Badge>
                                                 </TableCell>
-                                                <TableCell>{new Date(enrollment.enrollment_date).toLocaleDateString()}</TableCell>
+                                                <TableCell>{new Date(enrollment.created_at).toLocaleDateString()}</TableCell>
                                                 <TableCell className="text-right">
                                                     <DropdownMenu>
                                                         <DropdownMenuTrigger asChild>

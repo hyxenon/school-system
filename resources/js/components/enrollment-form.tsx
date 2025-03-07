@@ -3,7 +3,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { Course, Department, Student } from '@/types';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { EnrollmentFormData } from './enrollment-form-validation';
 
 interface EnrollmentFormProps {
@@ -28,24 +28,63 @@ export function EnrollmentForm({
     currentStudentName = '',
 }: EnrollmentFormProps) {
     // Initialize studentCourse state
+
     const [studentCourse, setStudentCourse] = useState('');
     const [studentDepartment, setStudentDepartment] = useState('');
 
-    // Find the selected student course whenever student_id changes
-    const updateStudentCourse = (studentId: string) => {
+    // Handle student selection
+    const handleStudentSelect = (studentId: string) => {
+        // Update the student ID in form data
+        updateFormData('student_id', studentId);
+
+        // Find the selected student
         const selectedStudent = students.find((student) => student.id === studentId);
-        if (selectedStudent) {
-            // Set course information
+
+        if (selectedStudent && selectedStudent.course) {
+            // Set course name for display
             setStudentCourse(`${selectedStudent.course.name} (${selectedStudent.course.course_code})`);
-            setStudentDepartment(`${selectedStudent.course.department.name} (${selectedStudent.course.department.department_code})`);
-            // Also set the course_id in formData
+
+            // Set course ID in form data
             updateFormData('course_id', selectedStudent.course.id.toString());
-            updateFormData('department_id', selectedStudent.course.department.id);
+
+            // Find department for the course
+            if (selectedStudent.course.department_id) {
+                const dept = departments.find((d) => d.id === selectedStudent.course.department_id);
+                if (dept) {
+                    // Set department name for display
+                    setStudentDepartment(`${dept.name} (${dept.department_code})`);
+
+                    // Set department ID in form data
+                    updateFormData('department_id', dept.id.toString());
+                }
+            }
         } else {
+            // Clear values if no student or course is found
             setStudentCourse('');
             setStudentDepartment('');
         }
     };
+
+    // Initialize values in edit mode
+    useEffect(() => {
+        if (isEditMode) {
+            // Find course details for display
+            if (formData.course_id) {
+                const selectedCourse = courses.find((course) => course.id.toString() === formData.course_id);
+                if (selectedCourse) {
+                    setStudentCourse(`${selectedCourse.name} (${selectedCourse.course_code})`);
+                }
+            }
+
+            // Find department details for display
+            if (formData.department_id) {
+                const selectedDepartment = departments.find((dept) => dept.id.toString() === formData.department_id);
+                if (selectedDepartment) {
+                    setStudentDepartment(`${selectedDepartment.name} (${selectedDepartment.department_code})`);
+                }
+            }
+        }
+    }, [isEditMode, formData.course_id, formData.department_id, courses, departments]);
     return (
         <div className="grid gap-4 py-4">
             {isEditMode ? (
@@ -61,13 +100,7 @@ export function EnrollmentForm({
                         Student <span className="text-red-500">*</span>
                     </Label>
                     <div className="col-span-3">
-                        <Select
-                            value={formData.student_id}
-                            onValueChange={(value) => {
-                                updateFormData('student_id', value);
-                                updateStudentCourse(value);
-                            }}
-                        >
+                        <Select value={formData.student_id} onValueChange={handleStudentSelect}>
                             <SelectTrigger className={errors.student_id ? 'border-red-500' : ''}>
                                 <SelectValue placeholder="Select student" />
                             </SelectTrigger>
@@ -91,16 +124,18 @@ export function EnrollmentForm({
                 <div className="col-span-3">
                     <Input disabled={true} value={studentCourse} placeholder="Please select a student." />
                     {errors.course_id && <p className="mt-1 text-sm text-red-500">{errors.course_id}</p>}
+                    <input type="hidden" name="course_id" value={formData.course_id} />
                 </div>
             </div>
 
             <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="course_id" className="text-right">
+                <Label htmlFor="department_id" className="text-right">
                     Department <span className="text-red-500">*</span>
                 </Label>
                 <div className="col-span-3">
                     <Input disabled={true} value={studentDepartment} placeholder="Please select a student." />
-                    {errors.course_id && <p className="mt-1 text-sm text-red-500">{errors.department_id}</p>}
+                    {errors.department_id && <p className="mt-1 text-sm text-red-500">{errors.department_id}</p>}
+                    <input type="hidden" name="department_id" value={formData.department_id} />
                 </div>
             </div>
 
