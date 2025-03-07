@@ -31,6 +31,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('employees', EmployeeController::class);
     Route::post('/employees/{employee}/toggle-active', [EmployeeController::class, 'toggleActive']);
     Route::resource('enrollment', EnrollmentController::class);
+    Route::get('enrollment/filter', [EnrollmentController::class, 'filter'])->name('enrollment.filter');
+    Route::get('enrollment/{enrollment}/export-pdf', [EnrollmentController::class, 'exportPdf'])->name('enrollment.export-pdf');
     Route::resource('departments', DepartmentController::class);
     Route::resource('courses', CourseController::class);
     Route::resource('buildings', BuildingController::class);
