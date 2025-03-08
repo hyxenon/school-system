@@ -18,7 +18,7 @@ return new class extends Migration
             $table->foreignIdFor(User::class);
             $table->foreignIdFor(Department::class)->nullable();
             $table->decimal('salary', 10, 2);
-            $table->enum('position', allowed: ['professor', 'registrar', 'treasurer']);
+            $table->enum('position', allowed: ['professor', 'registrar', 'treasurer', 'program head']);
             $table->boolean('isActive');
             $table->timestamps();
         });

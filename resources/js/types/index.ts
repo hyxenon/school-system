@@ -46,7 +46,7 @@ export interface Employee {
     department: Department;
     created_at: string;
     updated_at: string;
-    position: 'registrar' | 'treasurer' | 'professor';
+    position: 'registrar' | 'treasurer' | 'professor' | 'program head';
     isActive: boolean;
 }
 
@@ -132,7 +132,7 @@ export interface Department {
     id: number;
     department_code: string;
     name: string;
-    program_head_id?: string;
+    programHead?: Employee;
     courses: Course[];
     created_at: string;
     updated_at: string;

@@ -65,7 +65,7 @@ const roleBasedNavItems: Record<string, NavItem[]> = {
             icon: BriefcaseBusiness, // Change to appropriate icon
         },
     ],
-    program_head: [
+    'program head': [
         {
             title: 'Add Student',
             url: '/add-students',

@@ -375,6 +375,7 @@ export default function Department({ departments = [], totalDepartments = 12, to
                                 />
                                 {departmentForm.errors.name && <p className="col-span-4 text-sm text-red-500">{departmentForm.errors.name}</p>}
                             </div>
+                            {/* Program Head ID field with error handling */}
                             <div className="grid grid-cols-4 items-center gap-4">
                                 <Label htmlFor="program_head_id" className="col-span-4">
                                     Program Head ID (Optional)
@@ -382,10 +383,23 @@ export default function Department({ departments = [], totalDepartments = 12, to
                                 <Input
                                     id="program_head_id"
                                     placeholder="21-0477-551"
-                                    className="col-span-4"
+                                    className={`col-span-4 ${departmentForm.errors.program_head_id ? 'border-red-500' : ''}`}
                                     value={departmentForm.data.program_head_id}
-                                    onChange={(e) => departmentForm.setData('program_head_id', e.target.value)}
+                                    onChange={(e) => {
+                                        departmentForm.setData('program_head_id', e.target.value);
+                                        if (departmentForm.errors.program_head_id) {
+                                            departmentForm.clearErrors('program_head_id');
+                                        }
+                                    }}
                                 />
+                                {departmentForm.errors.program_head_id && (
+                                    <p className="col-span-4 text-sm text-red-500">{departmentForm.errors.program_head_id}</p>
+                                )}
+                                {departmentForm.errors.error && (
+                                    <div className="col-span-4 rounded-md bg-red-50 p-3">
+                                        <p className="text-sm text-red-600">{departmentForm.errors.error}</p>
+                                    </div>
+                                )}
                             </div>
                         </div>
                         <DialogFooter className="flex justify-between">
