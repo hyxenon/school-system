@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Student;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
 class StudentController extends Controller
@@ -13,7 +14,16 @@ class StudentController extends Controller
      */
     public function index()
     {
-        return Inertia::render('add-students-page');
+        $employee = Auth::user()->employee;
+        $courses = [];
+
+        if ($employee && $employee->position === 'program head') {
+            $courses = $employee->department->courses;
+        }
+
+        return Inertia::render('add-students-page', [
+            'courses' => $courses
+        ]);
     }
 
     /**
