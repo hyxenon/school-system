@@ -15,7 +15,7 @@ return new class extends Migration
     {
         Schema::create('employees', function (Blueprint $table) {
             $table->id();
-            $table->foreignIdFor(User::class);
+            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->foreignIdFor(Department::class)->nullable();
             $table->decimal('salary', 10, 2);
             $table->enum('position', allowed: ['professor', 'registrar', 'treasurer', 'program head']);
