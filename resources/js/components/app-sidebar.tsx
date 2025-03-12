@@ -110,7 +110,7 @@ export function AppSidebar() {
     const navItems = [...mainNavItems, ...roleNavItems];
 
     return (
-        <Sidebar collapsible="icon" variant="floating">
+        <Sidebar collapsible="icon" variant="sidebar">
             <SidebarHeader>
                 <SidebarMenu>
                     <SidebarMenuItem>

@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('students', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade'); // Link to User table
+            $table->foreignId('user_id')->constrained()->cascadeOnDelete(); // Link to User table
             $table->foreignId('course_id')->constrained()->onDelete('cascade'); // Link to Course table
             $table->integer('year_level'); // Year level (e.g., 1st year, 2nd year)
             $table->string('block')->nullable(); // Optional block/section
