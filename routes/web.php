@@ -7,6 +7,7 @@ use App\Http\Controllers\CurriculumController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\EnrollmentController;
+use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\RoomController;
 use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\StudentController;
@@ -49,6 +50,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Program Head
     Route::resource('add-students', StudentController::class);
+
+
+
+    // Treasury
+    Route::resource('payments', PaymentController::class);
 });
 
 

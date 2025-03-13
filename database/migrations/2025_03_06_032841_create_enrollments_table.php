@@ -21,6 +21,9 @@ return new class extends Migration
             $table->enum('status', ['Enrolled', 'Pending', 'Cancelled']);
             $table->enum('payment_status', ['Pending', 'Completed']);
             $table->timestamps();
+
+            $table->decimal('total_fee', 10, 2)->default(40000);
+            $table->decimal('remaining_balance', 10, 2)->default(40000);
         });
     }
 

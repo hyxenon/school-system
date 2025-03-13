@@ -35,4 +35,21 @@ class Enrollment extends Model
     {
         return $this->belongsTo(Department::class);
     }
+
+    public function payments()
+    {
+        return $this->hasMany(Payment::class);
+    }
+
+    public function getRemainingBalance()
+    {
+        // Fixed total fee for each enrollment
+        $totalFee = 40000;
+
+        // Get the total paid amount from all payments linked to this enrollment
+        $totalPaid = $this->payments->sum('amount');
+
+        // Calculate and return the remaining balance
+        return $totalFee - $totalPaid;
+    }
 }

@@ -4,7 +4,18 @@ import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { SharedData, type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { BookA, BookOpen, BriefcaseBusiness, BuildingIcon, CalendarIcon, CurlyBracesIcon, LayoutGrid, Mic, UserPlus } from 'lucide-react';
+import {
+    BookA,
+    BookOpen,
+    BriefcaseBusiness,
+    BuildingIcon,
+    CalendarIcon,
+    CircleDollarSign,
+    CurlyBracesIcon,
+    LayoutGrid,
+    Mic,
+    UserPlus,
+} from 'lucide-react';
 import AppLogo from './app-logo';
 
 const roleBasedNavItems: Record<string, NavItem[]> = {
@@ -74,9 +85,9 @@ const roleBasedNavItems: Record<string, NavItem[]> = {
     ],
     treasurer: [
         {
-            title: 'Finance',
-            url: 'finance',
-            icon: BriefcaseBusiness, // Change to appropriate icon
+            title: 'Payments',
+            url: '/payments',
+            icon: CircleDollarSign, // Change to appropriate icon
         },
     ],
 };
@@ -110,7 +121,7 @@ export function AppSidebar() {
     const navItems = [...mainNavItems, ...roleNavItems];
 
     return (
-        <Sidebar collapsible="icon" variant="sidebar">
+        <Sidebar collapsible="icon" variant="floating">
             <SidebarHeader>
                 <SidebarMenu>
                     <SidebarMenuItem>
