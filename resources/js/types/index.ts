@@ -62,6 +62,8 @@ export interface Enrollment {
     created_at: string;
     updated_at: string;
     payment_status: 'Pending' | 'Completed';
+    total_fee: number;
+    remaining_balance: number;
 }
 
 export interface Student {
@@ -94,6 +96,7 @@ export interface Grade {
 export interface Payment {
     id: number;
     student: Student;
+    enrollment: Enrollment;
     amount: number;
     payment_method: 'Cash' | 'Bank Transfer' | 'Online';
     payment_date: string;

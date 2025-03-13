@@ -44,4 +44,9 @@ class Student extends Model
     {
         return $this->hasMany(Payment::class);
     }
+
+    public function enrollment()
+    {
+        return $this->hasMany(Enrollment::class)->latest()->limit(1);
+    }
 }
