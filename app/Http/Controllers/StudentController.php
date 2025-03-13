@@ -37,19 +37,16 @@ class StudentController extends Controller
                     $q->whereHas('user', function ($userQuery) use ($search) {
                         $userQuery->where('name', 'like', "%{$search}%")
                             ->orWhere('email', 'like', "%{$search}%");
-                    })
-                        ->orWhereHas('course', function ($courseQuery) use ($search) {
-                            $courseQuery->where('name', 'like', "%{$search}%")
-                                ->orWhere('course_code', 'like', "%{$search}%");
-                        });
+                    });
                 });
             }
 
             // Filter by course
-            if ($request->has('course_id') && !empty($request->course_id)) {
+            if ($request->has('course_id') && !empty($request->course_id) && $request->course_id !== 'all') {
                 $query->where('course_id', $request->course_id);
             }
 
+            // The paginate method already returns the structure you need
             $students = $query->paginate(10)->withQueryString();
         } else {
             // If not a program head, return empty paginated collection
@@ -58,7 +55,10 @@ class StudentController extends Controller
                 0,
                 10,
                 1,
-                ['path' => $request->url()]
+                [
+                    'path' => $request->url(),
+                    'pageName' => 'page',
+                ]
             );
         }
 

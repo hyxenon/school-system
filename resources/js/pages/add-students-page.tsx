@@ -12,7 +12,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Pagination } from '@/components/ui/pagination';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
@@ -33,16 +32,14 @@ function AddStudentPage({ auth, courses, students: initialStudents }: { auth: an
     const [courseFilter, setCourseFilter] = useState('all');
 
     // Initialize with safe defaults to prevent the error
-    const [currentPage, setCurrentPage] = useState(initialStudents?.meta?.current_page || 1);
+    const [currentPage, setCurrentPage] = useState(initialStudents?.current_page || 1);
     const [students, setStudents] = useState(initialStudents?.data || []);
-    const [meta, setMeta] = useState(
-        initialStudents?.meta || {
-            current_page: 1,
-            last_page: 1,
-            per_page: 10,
-            total: 0,
-        },
-    );
+    const [meta, setMeta] = useState({
+        current_page: initialStudents?.current_page || 1,
+        last_page: initialStudents?.last_page || 1,
+        per_page: initialStudents?.per_page || 10,
+        total: initialStudents?.total || 0,
+    });
 
     const { data, setData, post, put, processing, errors, reset, setError, clearErrors } = useForm({
         name: '',
@@ -122,24 +119,44 @@ function AddStudentPage({ auth, courses, students: initialStudents }: { auth: an
         setIsDialogOpen(true);
     };
 
-    const handleDelete = (studentId: string) => {
-        if (confirm('Are you sure you want to delete this student?')) {
-            router.delete(`/add-students/${studentId}`, {
-                onSuccess: (page) => {
-                    // Check if we have a flash message from the server
-                    if (page?.props?.flash?.success) {
-                        toast.success(page.props.flash.success);
-                    } else {
-                        toast.success('Student deleted successfully');
-                    }
-                    fetchStudents(currentPage, searchQuery, courseFilter);
-                },
-                onError: (errors) => {
-                    console.error('Delete error:', errors);
-                    toast.error('Error deleting student: ' + (errors.message || 'Unknown error'));
-                },
-            });
-        }
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [studentToDelete, setStudentToDelete] = useState<{ id: string; name: string } | null>(null);
+
+    const handleDeleteClick = (student: Student) => {
+        setStudentToDelete({
+            id: student.id,
+            name: student.user.name,
+        });
+        setIsDeleteDialogOpen(true);
+    };
+
+    const handleDelete = () => {
+        if (!studentToDelete) return;
+
+        router.delete(`/add-students/${studentToDelete.id}`, {
+            onSuccess: (page) => {
+                // Check if we have a flash message from the server
+                if (page?.props?.flash?.success) {
+                    toast.success(page.props.flash.success);
+                } else {
+                    toast.success('Student deleted successfully');
+                }
+                fetchStudents(currentPage, searchQuery, courseFilter);
+                setIsDeleteDialogOpen(false);
+                setStudentToDelete(null);
+            },
+            onError: (errors) => {
+                console.error('Delete error:', errors);
+                toast.error('Error deleting student: ' + (errors.message || 'Unknown error'));
+                setIsDeleteDialogOpen(false);
+                setStudentToDelete(null);
+            },
+        });
+    };
+
+    const handleCancelDelete = () => {
+        setIsDeleteDialogOpen(false);
+        setStudentToDelete(null);
     };
 
     const fetchStudents = (page = 1, search = searchQuery, courseId = courseFilter) => {
@@ -157,12 +174,19 @@ function AddStudentPage({ auth, courses, students: initialStudents }: { auth: an
             url,
             {},
             {
-                preserveState: true, // Preserve page state when making the request
+                preserveState: true,
+                preserveScroll: true,
+                only: ['students'],
                 onSuccess: (response) => {
                     if (response.props && response.props.students && response.props.students.data) {
                         setStudents(response.props.students.data);
-                        setMeta(response.props.students.meta || {}); // Provide default empty object if meta is undefined
-                        setCurrentPage(response.props.students.meta?.current_page || 1); // Use fallback if meta or current_page is undefined
+                        setCurrentPage(response.props.students.current_page || 1);
+                        setMeta({
+                            current_page: response.props.students.current_page,
+                            last_page: response.props.students.last_page,
+                            per_page: response.props.students.per_page,
+                            total: response.props.students.total,
+                        });
                     } else {
                         console.error('Students data or pagination meta is missing:', response);
                         toast.error('Failed to load students data');
@@ -185,6 +209,7 @@ function AddStudentPage({ auth, courses, students: initialStudents }: { auth: an
     useEffect(() => {
         // Debounce search and filter changes
         const timer = setTimeout(() => {
+            // Always go back to page 1 when search/filter changes
             fetchStudents(1, searchQuery, courseFilter);
         }, 500);
 
@@ -208,6 +233,8 @@ function AddStudentPage({ auth, courses, students: initialStudents }: { auth: an
         reset();
         clearErrors();
     };
+
+    const pagination = usePage().props.students;
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -275,8 +302,8 @@ function AddStudentPage({ auth, courses, students: initialStudents }: { auth: an
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {students.length > 0 ? (
-                                    students.map((student) => (
+                                {pagination.data.length > 0 ? (
+                                    pagination.data.map((student) => (
                                         <TableRow key={student.id}>
                                             <TableCell className="font-medium">{student.user.name}</TableCell>
                                             <TableCell>{student.user.email}</TableCell>
@@ -306,7 +333,7 @@ function AddStudentPage({ auth, courses, students: initialStudents }: { auth: an
                                                         <Pencil className="h-4 w-4" />
                                                         <span className="sr-only">Edit</span>
                                                     </Button>
-                                                    <Button variant="ghost" size="icon" onClick={() => handleDelete(student.id)}>
+                                                    <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(student)}>
                                                         <Trash2 className="h-4 w-4" />
                                                         <span className="sr-only">Delete</span>
                                                     </Button>
@@ -317,7 +344,7 @@ function AddStudentPage({ auth, courses, students: initialStudents }: { auth: an
                                 ) : (
                                     <TableRow>
                                         <TableCell colSpan={7} className="text-muted-foreground py-8 text-center">
-                                            {searchQuery || courseFilter
+                                            {searchQuery || courseFilter !== 'all'
                                                 ? 'No students found matching your search criteria.'
                                                 : 'No students added yet. Add your first student!'}
                                         </TableCell>
@@ -328,21 +355,48 @@ function AddStudentPage({ auth, courses, students: initialStudents }: { auth: an
 
                         {meta.last_page > 1 && (
                             <div className="mt-4 flex justify-center">
-                                <Pagination>
-                                    <Button variant="outline" onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1}>
+                                <div className="flex items-center gap-2">
+                                    <Button variant="outline" onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage <= 1} size="sm">
                                         Previous
                                     </Button>
-                                    <div className="mx-4 flex items-center">
-                                        Page {currentPage} of {meta.last_page}
-                                    </div>
+
+                                    {Array.from({ length: meta.last_page }, (_, i) => i + 1).map((page) => {
+                                        // Only show current page, first, last, and pages close to current
+                                        if (page === 1 || page === meta.last_page || (page >= currentPage - 1 && page <= currentPage + 1)) {
+                                            return (
+                                                <Button
+                                                    key={page}
+                                                    variant={page === currentPage ? 'default' : 'outline'}
+                                                    size="sm"
+                                                    onClick={() => handlePageChange(page)}
+                                                    className="min-w-[40px]"
+                                                >
+                                                    {page}
+                                                </Button>
+                                            );
+                                        }
+
+                                        // Show ellipsis for gaps
+                                        if ((page === 2 && currentPage > 3) || (page === meta.last_page - 1 && currentPage < meta.last_page - 2)) {
+                                            return (
+                                                <span key={page} className="px-2">
+                                                    ...
+                                                </span>
+                                            );
+                                        }
+
+                                        return null;
+                                    })}
+
                                     <Button
                                         variant="outline"
                                         onClick={() => handlePageChange(currentPage + 1)}
-                                        disabled={currentPage === meta.last_page}
+                                        disabled={currentPage >= meta.last_page}
+                                        size="sm"
                                     >
                                         Next
                                     </Button>
-                                </Pagination>
+                                </div>
                             </div>
                         )}
                     </CardContent>
@@ -461,6 +515,26 @@ function AddStudentPage({ auth, courses, students: initialStudents }: { auth: an
                                 </Button>
                             </DialogFooter>
                         </form>
+                    </DialogContent>
+                </Dialog>
+                {/* Delete Confirmation Dialog */}
+                <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                    <DialogContent className="sm:max-w-[425px]">
+                        <DialogHeader>
+                            <DialogTitle>Confirm Deletion</DialogTitle>
+                            <DialogDescription>
+                                Are you sure you want to delete the student <span className="font-medium">{studentToDelete?.name}</span>? This action
+                                cannot be undone.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="flex justify-end gap-3 pt-4">
+                            <Button variant="outline" onClick={handleCancelDelete}>
+                                Cancel
+                            </Button>
+                            <Button variant="destructive" onClick={handleDelete}>
+                                Delete
+                            </Button>
+                        </div>
                     </DialogContent>
                 </Dialog>
             </div>
