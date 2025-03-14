@@ -37,6 +37,7 @@ import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem, SharedData } from '@/types';
 import { Head, router, usePage } from '@inertiajs/react';
 
+import PaymentsTable from '@/components/payments-table';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Toaster } from 'sonner';
 
@@ -47,7 +48,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-const TreasuryPaymentPage = ({ studentData = null, receiptData = null, success = false }) => {
+const TreasuryPaymentPage = ({ studentData = null, receiptData = null, success = false, payments }) => {
     // Get authenticated user
     const { auth } = usePage<SharedData>().props;
 
@@ -113,7 +114,6 @@ const TreasuryPaymentPage = ({ studentData = null, receiptData = null, success =
         if (!student) return;
 
         setProcessingPayment(true);
-        console.log(student.enrollment[0]?.id);
 
         // Use Inertia's router.post to submit the payment
         router.post(
@@ -210,7 +210,7 @@ const TreasuryPaymentPage = ({ studentData = null, receiptData = null, success =
                                         />
                                         <AvatarFallback>{student.user.name?.charAt(0)}</AvatarFallback>
                                     </Avatar>
-                                    <h3 className="text-xl font-bold">{student.user.name}</h3>
+                                    <h3 className="text-xl font-bold capitalize">{student.user.name}</h3>
                                     <Badge className="mt-1">{student.status}</Badge>
                                 </div>
 
@@ -271,8 +271,8 @@ const TreasuryPaymentPage = ({ studentData = null, receiptData = null, success =
                                 <div className="bg-primary/5 mt-6 rounded-md p-3">
                                     <div className="flex items-center justify-between">
                                         <p className="text-sm font-medium">Enrollment Status</p>
-                                        <Badge variant={student.enrollment?.status === 'Enrolled' ? 'default' : 'outline'}>
-                                            {student.enrollment?.status}
+                                        <Badge variant={student.enrollment[0]?.status === 'Enrolled' ? 'default' : 'outline'}>
+                                            {student.enrollment[0]?.status}
                                         </Badge>
                                     </div>
                                 </div>
@@ -384,6 +384,9 @@ const TreasuryPaymentPage = ({ studentData = null, receiptData = null, success =
                                 </Button>
                             </CardFooter>
                         </Card>
+                        <div className="col-span-full">
+                            <PaymentsTable data={payments} />
+                        </div>
                     </div>
                 )}
 

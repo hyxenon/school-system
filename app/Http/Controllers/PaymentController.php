@@ -15,6 +15,7 @@ class PaymentController extends Controller
     public function index(Request $request)
     {
         $student = null;
+        $payments = [];
 
         // Check if student ID is provided in the URL
         if ($request->has('student')) {
@@ -27,10 +28,17 @@ class PaymentController extends Controller
             if ($student && $student->enrollment) {
                 $student->enrollment = $student->enrollment->first();
             }
+
+            if ($student) {
+                $payments = Payment::where('student_id', $student->id)
+                    ->with('enrollment')
+                    ->paginate(10);
+            }
         }
 
         return Inertia::render('payment', [
-            'studentData' => $student
+            'studentData' => $student,
+            'payments' => $payments
         ]);
     }
 
@@ -56,6 +64,7 @@ class PaymentController extends Controller
             'payment_date' => now(),
             'cashier_id' => auth()->id(),
             'receipt_number' => $this->generateReceiptNumber(),
+            'status' => 'Completed',
         ]);
 
         // Update student's remaining balance
@@ -98,11 +107,55 @@ class PaymentController extends Controller
             'semester' => $student->enrollment->semester,
         ];
 
+
+        if ($student) {
+            $payments = Payment::where('student_id', $student->id)
+                ->with('enrollment')
+                ->paginate(10);
+        }
+
         return Inertia::render('payment', [
             'studentData' => $student,
             'receiptData' => $receiptData,
+            'payments' => $payments,
             'success' => true,
         ]);
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy($id)
+    {
+        // Find the payment record
+        $payment = Payment::findOrFail($id);
+
+        // Get the student and enrollment details
+        $student = Student::with(['user', 'course', 'enrollment' => function ($query) {
+            $query->latest()->first();
+        }])->find($payment->student_id);
+
+        // Get the latest enrollment
+        if ($student && $student->enrollment) {
+            $student->enrollment = $student->enrollment->first();
+        }
+
+        // Calculate the new remaining balance
+        $totalFee = $student->enrollment->total_fee;
+        $totalPaid = Payment::where('student_id', $payment->student_id)
+            ->where('enrollment_id', $payment->enrollment_id)
+            ->sum('amount') - $payment->amount;
+        $newBalance = $totalFee - $totalPaid;
+
+        // Update the student's remaining balance
+        $student->enrollment->update([
+            'remaining_balance' => $newBalance
+        ]);
+
+        // Delete the payment record
+        $payment->delete();
+
+        return response()->json(['success' => true]);
     }
 
     /**
