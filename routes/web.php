@@ -54,7 +54,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 
     // Treasury
-    Route::resource('payments', PaymentController::class);
+    Route::get('/payments', [PaymentController::class, 'index'])->name('payments.index');
+    Route::post('/payments', [PaymentController::class, 'store'])->name('payments.store');
 });
 
 

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Payment;
+use App\Models\Student;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -11,17 +12,26 @@ class PaymentController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        return Inertia::render('payment');
-    }
+        $student = null;
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
+        // Check if student ID is provided in the URL
+        if ($request->has('student')) {
+            // Find the student by ID and get the latest enrollment
+            $student = Student::with(['user', 'course', 'enrollment.department' => function ($query) {
+                $query->latest()->first();
+            }])->find($request->student);
+
+            // Get the latest enrollment
+            if ($student && $student->enrollment) {
+                $student->enrollment = $student->enrollment->first();
+            }
+        }
+
+        return Inertia::render('payment', [
+            'studentData' => $student
+        ]);
     }
 
     /**
@@ -29,38 +39,73 @@ class PaymentController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        // Validate the request
+        $validated = $request->validate([
+            'student_id' => 'required|exists:students,id',
+            'amount' => 'required|numeric|min:1',
+            'payment_method' => 'required|string',
+        ]);
+
+        // Create the payment record
+        $payment = Payment::create([
+            'student_id' => $validated['student_id'],
+            'amount' => $validated['amount'],
+            'payment_method' => $validated['payment_method'],
+            'payment_date' => now(),
+            'cashier_id' => auth()->id(),
+            'receipt_number' => $this->generateReceiptNumber(),
+        ]);
+
+        // Update student's remaining balance
+        $student = Student::with(['user', 'course', 'enrollment' => function ($query) {
+            $query->latest()->first();
+        }])->find($validated['student_id']);
+
+        // Get the latest enrollment
+        if ($student && $student->enrollment) {
+            $student->enrollment = $student->enrollment->first();
+        }
+
+        $previousBalance = $student->enrollment->remaining_balance;
+        $newBalance = $previousBalance - $validated['amount'];
+
+        $student->enrollment->update([
+            'remaining_balance' => $newBalance
+        ]);
+
+        // Create receipt data
+        $receiptData = [
+            'receipt_number' => $payment->receipt_number,
+            'student_id' => $student->id,
+            'student_name' => $student->user->name,
+            'payment_date' => $payment->payment_date->format('F d, Y'),
+            'payment_time' => $payment->payment_date->format('h:mm a'),
+            'amount' => $payment->amount,
+            'payment_method' => $payment->payment_method,
+            'cashier' => auth()->user()->name,
+            'previous_balance' => $previousBalance,
+            'new_balance' => $newBalance,
+            'course' => $student->course->name,
+            'academic_year' => $student->enrollment->academic_year,
+            'semester' => $student->enrollment->semester,
+        ];
+
+        return Inertia::render('TreasuryPaymentPage', [
+            'studentData' => $student,
+            'receiptData' => $receiptData,
+            'success' => true,
+        ]);
     }
 
     /**
-     * Display the specified resource.
+     * Generate a unique receipt number
      */
-    public function show(Payment $payment)
+    private function generateReceiptNumber()
     {
-        //
+        $timestamp = now()->timestamp;
+        $random = rand(100, 999);
+        return "RCP-{$timestamp}-{$random}";
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Payment $payment)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, Payment $payment)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Payment $payment)
-    {
-        //
-    }
+    // Other methods remain unchanged...
 }

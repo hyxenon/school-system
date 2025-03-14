@@ -1,5 +1,3 @@
-'use client';
-
 import { format } from 'date-fns';
 import {
     Banknote,
@@ -16,7 +14,7 @@ import {
     Search,
     User,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import PrintableReceipt from '@/components/printable-receipt';
 import {
@@ -37,8 +35,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator';
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem, SharedData } from '@/types';
-import { Head, usePage } from '@inertiajs/react';
-import { toast, Toaster } from 'sonner';
+import { Head, router, usePage } from '@inertiajs/react';
+
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Toaster } from 'sonner';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -47,71 +47,66 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-const TreasuryPaymentPage = () => {
+const TreasuryPaymentPage = ({ studentData = null, receiptData = null, success = false }) => {
     // Get authenticated user
     const { auth } = usePage<SharedData>().props;
 
     // Application states
     const [searchQuery, setSearchQuery] = useState('');
     const [isSearching, setIsSearching] = useState(false);
-    const [student, setStudent] = useState<any>(null);
+    const [student, setStudent] = useState(studentData);
     const [amount, setAmount] = useState('');
     const [paymentMethod, setPaymentMethod] = useState('Cash');
-    const [showSuccess, setShowSuccess] = useState(false);
+    const [showSuccess, setShowSuccess] = useState(success);
     const [processingPayment, setProcessingPayment] = useState(false);
-    const [receiptData, setReceiptData] = useState<any>(null);
+    const [showAlert, setShowAlert] = useState(false);
+    const [studentId, setStudentId] = useState('');
 
     // Current date is automatically set and fixed
     const currentDate = format(new Date(), 'yyyy-MM-dd');
     const formattedDate = format(new Date(), 'MMMM d, yyyy');
 
-    // Generate a unique receipt number
-    const generateReceiptNumber = () => {
-        const timestamp = new Date().getTime();
-        const random = Math.floor(Math.random() * 1000);
-        return `RCP-${timestamp}-${random}`;
-    };
+    // Check for the alert query parameter and set the showAlert state
+    useEffect(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('alert') === 'true' && !studentData) {
+            setShowAlert(true);
+        }
 
-    // Mock student data - in a real app, this would come from your API
-    const mockStudentData = {
-        ST12345: {
-            id: 'ST12345',
-            user: { id: 1, name: 'John Doe', email: 'john.doe@example.com' },
-            course: { id: 1, name: 'Bachelor of Science in Computer Science' },
-            year_level: 2,
-            block: 1,
-            status: 'Regular',
-            enrollment_status: 'Enrolled',
-            enrollment: {
-                id: 1,
-                course: { id: 1, name: 'Bachelor of Science in Computer Science' },
-                department: { id: 1, name: 'College of Computer Studies' },
-                academic_year: '2024-2025',
-                semester: 1,
-                enrollment_date: '2024-06-01',
-                status: 'Enrolled',
-                payment_status: 'Pending',
-                total_fee: 40000,
-                remaining_balance: 32000,
-            },
-        },
-    };
+        setStudentId(urlParams.get('student'));
+    }, [studentData]);
+
+    // Set student data if provided via props
+    useEffect(() => {
+        if (studentData) {
+            setStudent(studentData);
+        }
+
+        if (receiptData) {
+            setShowSuccess(true);
+        }
+    }, [studentData, receiptData]);
 
     const handleSearch = () => {
         if (!searchQuery.trim()) return;
 
         setIsSearching(true);
 
-        // Simulate API call delay
-        setTimeout(() => {
-            const foundStudent = mockStudentData[searchQuery];
-            setStudent(foundStudent || null);
-            setIsSearching(false);
+        // Use Inertia to navigate to the URL with the student parameter
+        router.get(
+            '/payments',
+            { student: searchQuery, alert: 'true' }, // Add alert query parameter
+            {
+                onFinish: () => {
+                    setIsSearching(false);
 
-            if (!foundStudent) {
-                toast.error('No student found');
-            }
-        }, 800);
+                    // If no student was found, show an error toast
+                    if (!studentData) {
+                        setShowAlert(true);
+                    }
+                },
+            },
+        );
     };
 
     const handlePaymentSubmit = () => {
@@ -119,41 +114,26 @@ const TreasuryPaymentPage = () => {
 
         setProcessingPayment(true);
 
-        // Simulate processing payment
-        setTimeout(() => {
-            const paymentAmount = Number.parseFloat(amount);
-            const newBalance = student.enrollment.remaining_balance - paymentAmount;
-
-            // Create receipt data
-            const receipt = {
-                receipt_number: generateReceiptNumber(),
+        // Use Inertia's router.post to submit the payment
+        router.post(
+            '/payments',
+            {
                 student_id: student.id,
-                student_name: student.user.name,
-                payment_date: formattedDate,
-                payment_time: format(new Date(), 'h:mm a'),
-                amount: paymentAmount,
+                amount: parseFloat(amount),
                 payment_method: paymentMethod,
-                cashier: auth.user.name,
-                previous_balance: student.enrollment.remaining_balance,
-                new_balance: newBalance,
-                course: student.course.name,
-                academic_year: student.enrollment.academic_year,
-                semester: student.enrollment.semester,
-            };
-
-            setReceiptData(receipt);
-            setProcessingPayment(false);
-            setShowSuccess(true);
-        }, 1000);
+            },
+            {
+                onFinish: () => {
+                    setProcessingPayment(false);
+                },
+            },
+        );
     };
 
     const resetForm = () => {
         setSearchQuery('');
-        setStudent(null);
-        setAmount('');
-        setPaymentMethod('Cash');
-        setShowSuccess(false);
-        setReceiptData(null);
+        // Navigate back to the payments page without student parameter
+        router.get('/payments');
     };
 
     const startNewPayment = () => {
@@ -167,6 +147,12 @@ const TreasuryPaymentPage = () => {
             <Head title="Payments" />
             <Toaster />
             <div className="container mx-auto py-8">
+                {showAlert && (
+                    <Alert className="mb-8" variant="destructive" onClose={() => setShowAlert(false)}>
+                        <AlertTitle>Student Not Found: {studentId}</AlertTitle>
+                        <AlertDescription>No student was found with the provided ID. Please check the ID and try again.</AlertDescription>
+                    </Alert>
+                )}
                 <Card className="mb-8">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-2xl">
@@ -179,7 +165,7 @@ const TreasuryPaymentPage = () => {
                         <div className="flex gap-4">
                             <div className="flex-1">
                                 <Input
-                                    placeholder="Enter Student ID (try ST12345 or ST67890)"
+                                    placeholder="Enter Student ID"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     className="w-full"
@@ -202,7 +188,7 @@ const TreasuryPaymentPage = () => {
                     </CardContent>
                 </Card>
 
-                {student && (
+                {student && student.user && (
                     <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
                         <Card className="overflow-hidden">
                             <CardHeader className="bg-primary/5 pb-4">
@@ -219,7 +205,7 @@ const TreasuryPaymentPage = () => {
                                             src={`https://api.dicebear.com/7.x/initials/svg?seed=${student.user.name}`}
                                             alt={student.user.name}
                                         />
-                                        <AvatarFallback>{student.user.name.charAt(0)}</AvatarFallback>
+                                        <AvatarFallback>{student.user.name?.charAt(0)}</AvatarFallback>
                                     </Avatar>
                                     <h3 className="text-xl font-bold">{student.user.name}</h3>
                                     <Badge className="mt-1">{student.status}</Badge>
@@ -245,7 +231,7 @@ const TreasuryPaymentPage = () => {
                                         <p className="text-muted-foreground text-sm">Course</p>
                                         <p className="flex items-center font-medium">
                                             <BookOpen className="text-primary/70 mr-1 h-4 w-4" />
-                                            {student.course.name}
+                                            {student.course?.name}
                                         </p>
                                     </div>
 
@@ -261,7 +247,7 @@ const TreasuryPaymentPage = () => {
                                         <p className="text-muted-foreground text-sm">Department</p>
                                         <p className="flex items-center font-medium">
                                             <Building2 className="text-primary/70 mr-1 h-4 w-4" />
-                                            {student.enrollment.department.name}
+                                            {student.enrollment[0]?.department?.name}
                                         </p>
                                     </div>
 
@@ -269,21 +255,21 @@ const TreasuryPaymentPage = () => {
                                         <p className="text-muted-foreground text-sm">Academic Year</p>
                                         <p className="flex items-center font-medium">
                                             <Calendar className="text-primary/70 mr-1 h-4 w-4" />
-                                            {student.enrollment.academic_year}
+                                            {student.enrollment[0]?.academic_year}
                                         </p>
                                     </div>
 
                                     <div className="space-y-1">
                                         <p className="text-muted-foreground text-sm">Semester</p>
-                                        <p className="font-medium">{student.enrollment.semester}</p>
+                                        <p className="font-medium">{student.enrollment[0]?.semester}</p>
                                     </div>
                                 </div>
 
                                 <div className="bg-primary/5 mt-6 rounded-md p-3">
                                     <div className="flex items-center justify-between">
                                         <p className="text-sm font-medium">Enrollment Status</p>
-                                        <Badge variant={student.enrollment.status === 'Enrolled' ? 'default' : 'outline'}>
-                                            {student.enrollment.status}
+                                        <Badge variant={student.enrollment?.status === 'Enrolled' ? 'default' : 'outline'}>
+                                            {student.enrollment?.status}
                                         </Badge>
                                     </div>
                                 </div>
@@ -302,11 +288,13 @@ const TreasuryPaymentPage = () => {
                                 <div className="bg-muted/30 mb-6 grid grid-cols-2 gap-4 rounded-lg p-4">
                                     <div className="space-y-1">
                                         <p className="text-muted-foreground text-sm">Total Fee</p>
-                                        <p className="text-lg font-bold">₱{student.enrollment.total_fee.toLocaleString()}</p>
+                                        <p className="text-lg font-bold">₱{student.enrollment[0]?.total_fee?.toLocaleString() || '0'}</p>
                                     </div>
                                     <div className="space-y-1">
                                         <p className="text-muted-foreground text-sm">Remaining Balance</p>
-                                        <p className="text-lg font-bold text-red-500">₱{student.enrollment.remaining_balance.toLocaleString()}</p>
+                                        <p className="text-lg font-bold text-red-500">
+                                            ₱{student.enrollment[0]?.remaining_balance?.toLocaleString() || '0'}
+                                        </p>
                                     </div>
                                 </div>
 
@@ -404,31 +392,33 @@ const TreasuryPaymentPage = () => {
                                 Payment Successful
                             </AlertDialogTitle>
                             <AlertDialogDescription>
-                                Payment of ₱{Number.parseFloat(amount || '0').toLocaleString()} has been successfully recorded for student{' '}
-                                {student?.user.name}.
-                                <div className="mt-4 rounded-md bg-green-50 p-4">
-                                    <div className="font-medium">Payment Details:</div>
-                                    <div className="mt-1 text-sm">
-                                        <div>
-                                            <span className="font-medium">Amount:</span> ₱{Number.parseFloat(amount || '0').toLocaleString()}
+                                {receiptData && (
+                                    <>
+                                        Payment of ₱{receiptData.amount.toLocaleString()} has been successfully recorded for student{' '}
+                                        {receiptData.student_name}.
+                                        <div className="mt-4 rounded-md bg-green-50 p-4">
+                                            <div className="font-medium">Payment Details:</div>
+                                            <div className="mt-1 text-sm">
+                                                <div>
+                                                    <span className="font-medium">Amount:</span> ₱{receiptData.amount.toLocaleString()}
+                                                </div>
+                                                <div>
+                                                    <span className="font-medium">Method:</span> {receiptData.payment_method}
+                                                </div>
+                                                <div>
+                                                    <span className="font-medium">Date:</span> {receiptData.payment_date}
+                                                </div>
+                                                <div>
+                                                    <span className="font-medium">Status:</span> Completed
+                                                </div>
+                                                <div className="mt-2">
+                                                    <span className="font-medium">New Remaining Balance:</span> ₱
+                                                    {receiptData.new_balance.toLocaleString()}
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <span className="font-medium">Method:</span> {paymentMethod}
-                                        </div>
-                                        <div>
-                                            <span className="font-medium">Date:</span> {formattedDate}
-                                        </div>
-                                        <div>
-                                            <span className="font-medium">Status:</span> Completed
-                                        </div>
-                                        <div className="mt-2">
-                                            <span className="font-medium">New Remaining Balance:</span> ₱
-                                            {student
-                                                ? (student.enrollment.remaining_balance - Number.parseFloat(amount || '0')).toLocaleString()
-                                                : '0'}
-                                        </div>
-                                    </div>
-                                </div>
+                                    </>
+                                )}
                             </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter className="flex flex-col gap-3 sm:flex-row">
@@ -436,7 +426,7 @@ const TreasuryPaymentPage = () => {
                                 <RefreshCw className="mr-2 h-4 w-4" />
                                 New Student
                             </Button>
-                            <PrintableReceipt receiptData={receiptData} />
+                            {receiptData && <PrintableReceipt receiptData={receiptData} />}
                             <Button className="sm:flex-1" onClick={startNewPayment}>
                                 Another Payment
                             </Button>
