@@ -149,7 +149,7 @@ const TreasuryPaymentPage = ({ studentData = null, receiptData = null, success =
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Payments" />
             <Toaster />
-            <div className="container mx-auto py-8">
+            <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
                 {showAlert && (
                     <Alert className="mb-8" variant="destructive" onClose={() => setShowAlert(false)}>
                         <AlertTitle>Student Not Found: {studentId}</AlertTitle>
