@@ -44,11 +44,13 @@ class PaymentController extends Controller
             'student_id' => 'required|exists:students,id',
             'amount' => 'required|numeric|min:1',
             'payment_method' => 'required|string',
+            'enrollment_id' => 'required|exists:enrollments,id',
         ]);
 
         // Create the payment record
         $payment = Payment::create([
             'student_id' => $validated['student_id'],
+            'enrollment_id' => $validated['enrollment_id'],
             'amount' => $validated['amount'],
             'payment_method' => $validated['payment_method'],
             'payment_date' => now(),
@@ -66,8 +68,14 @@ class PaymentController extends Controller
             $student->enrollment = $student->enrollment->first();
         }
 
-        $previousBalance = $student->enrollment->remaining_balance;
-        $newBalance = $previousBalance - $validated['amount'];
+        // Calculate the total amount paid by the student
+        $totalPaid = Payment::where('student_id', $validated['student_id'])
+            ->where('enrollment_id', $validated['enrollment_id'])
+            ->sum('amount');
+
+        // Calculate the new remaining balance
+        $totalFee = $student->enrollment->total_fee;
+        $newBalance = $totalFee - $totalPaid;
 
         $student->enrollment->update([
             'remaining_balance' => $newBalance
@@ -83,14 +91,14 @@ class PaymentController extends Controller
             'amount' => $payment->amount,
             'payment_method' => $payment->payment_method,
             'cashier' => auth()->user()->name,
-            'previous_balance' => $previousBalance,
+            'previous_balance' => $newBalance + $validated['amount'],
             'new_balance' => $newBalance,
             'course' => $student->course->name,
             'academic_year' => $student->enrollment->academic_year,
             'semester' => $student->enrollment->semester,
         ];
 
-        return Inertia::render('TreasuryPaymentPage', [
+        return Inertia::render('payment', [
             'studentData' => $student,
             'receiptData' => $receiptData,
             'success' => true,

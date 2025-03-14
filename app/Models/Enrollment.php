@@ -18,7 +18,9 @@ class Enrollment extends Model
         'semester',
         'enrollment_date',
         'status',
-        'payment_status'
+        'payment_status',
+        'remaining_balance',
+        'total_fee'
     ];
 
     public function student()

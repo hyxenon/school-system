@@ -113,14 +113,17 @@ const TreasuryPaymentPage = ({ studentData = null, receiptData = null, success =
         if (!student) return;
 
         setProcessingPayment(true);
+        console.log(student.enrollment[0]?.id);
 
         // Use Inertia's router.post to submit the payment
         router.post(
             '/payments',
             {
                 student_id: student.id,
+                enrollment_id: student.enrollment[0]?.id, // Include the enrollment_id
                 amount: parseFloat(amount),
                 payment_method: paymentMethod,
+                payment_date: currentDate, // Include the payment_date
             },
             {
                 onFinish: () => {
