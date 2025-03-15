@@ -228,7 +228,7 @@ export function ScheduleCreateModal({ subjects = [], professors = [], rooms = []
                                                     <SelectValue placeholder="Select a professor" />
                                                 </SelectTrigger>
                                             </FormControl>
-                                            <SelectContent>
+                                            <SelectContent onKeyDown={(e) => e.stopPropagation()}>
                                                 <div className="p-2">
                                                     <div className="relative">
                                                         <Search className="text-muted-foreground absolute top-1/2 left-2 h-4 w-4 -translate-y-1/2" />
@@ -237,6 +237,7 @@ export function ScheduleCreateModal({ subjects = [], professors = [], rooms = []
                                                             value={professorSearch}
                                                             onChange={(e) => setProfessorSearch(e.target.value)}
                                                             className="mb-2 pl-8"
+                                                            onKeyDown={(e) => e.stopPropagation()}
                                                         />
                                                         {professorSearch && (
                                                             <X
@@ -283,7 +284,7 @@ export function ScheduleCreateModal({ subjects = [], professors = [], rooms = []
                                                     <SelectValue placeholder="Select a building" />
                                                 </SelectTrigger>
                                             </FormControl>
-                                            <SelectContent>
+                                            <SelectContent onKeyDown={(e) => e.stopPropagation()}>
                                                 <div className="p-2">
                                                     <div className="relative">
                                                         <Search className="text-muted-foreground absolute top-1/2 left-2 h-4 w-4 -translate-y-1/2" />
@@ -292,6 +293,7 @@ export function ScheduleCreateModal({ subjects = [], professors = [], rooms = []
                                                             value={buildingSearch}
                                                             onChange={(e) => setBuildingSearch(e.target.value)}
                                                             className="mb-2 pl-8"
+                                                            onKeyDown={(e) => e.stopPropagation()}
                                                         />
                                                         {buildingSearch && (
                                                             <X
@@ -336,7 +338,7 @@ export function ScheduleCreateModal({ subjects = [], professors = [], rooms = []
                                                     <SelectValue placeholder="Select a room" />
                                                 </SelectTrigger>
                                             </FormControl>
-                                            <SelectContent>
+                                            <SelectContent onKeyDown={(e) => e.stopPropagation()}>
                                                 {form.watch('building_id') ? (
                                                     <>
                                                         <div className="p-2">
@@ -347,6 +349,7 @@ export function ScheduleCreateModal({ subjects = [], professors = [], rooms = []
                                                                     value={roomSearch}
                                                                     onChange={(e) => setRoomSearch(e.target.value)}
                                                                     className="mb-2 pl-8"
+                                                                    onKeyDown={(e) => e.stopPropagation()}
                                                                 />
                                                                 {roomSearch && (
                                                                     <X

@@ -14,6 +14,7 @@ import {
     PaginationNext,
     PaginationPrevious,
 } from '@/components/ui/pagination';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AppLayout from '@/layouts/app-layout';
@@ -581,21 +582,21 @@ export default function Index({ buildings, rooms, filters = {} }: Props) {
                             </div>
                             <div className="grid gap-2">
                                 <Label htmlFor="room-building">Building</Label>
-                                <select
-                                    id="room-building"
-                                    className={`flex h-10 w-full rounded-md border ${formErrors.building_id ? 'border-destructive' : 'border-input'} bg-background ring-offset-background focus-visible:ring-ring px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none`}
-                                    value={selectedBuildingId}
-                                    onChange={(e) => setSelectedBuildingId(e.target.value)}
-                                >
-                                    <option value="" disabled>
-                                        Select a building
-                                    </option>
-                                    {buildings.data.map((building) => (
-                                        <option key={building.id} value={building.id}>
-                                            {building.name}
-                                        </option>
-                                    ))}
-                                </select>
+                                <Select value={selectedBuildingId} onValueChange={(value) => setSelectedBuildingId(value)}>
+                                    <SelectTrigger
+                                        id="room-building"
+                                        className={`flex h-10 w-full rounded-md border ${formErrors.building_id ? 'border-destructive' : 'border-input'} bg-background ring-offset-background focus-visible:ring-ring px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none`}
+                                    >
+                                        <SelectValue placeholder="Select a building" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {buildings.data.map((building) => (
+                                            <SelectItem key={building.id} value={building.id}>
+                                                {building.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                                 {formErrors.building_id && (
                                     <Alert variant="destructive" className="mt-1 py-2">
                                         <AlertCircle className="h-4 w-4" />
