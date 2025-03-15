@@ -47,6 +47,19 @@ function CurriculumPage() {
         subject_id: '',
     });
 
+    // Make sure the form data is set correctly when the component mounts
+    useEffect(() => {
+        if (departments.length > 0 && courses.length > 0) {
+            const initialDepartment = departments[0]?.id;
+            // Find the first course in the selected department
+            const initialCourse = courses.find((course) => course.department_id === initialDepartment)?.id || courses[0]?.id;
+
+            setSelectedDepartment(initialDepartment);
+            setSelectedCourse(initialCourse);
+            setData('course_id', initialCourse);
+        }
+    }, []);
+
     useEffect(() => {
         if (selectedCourse) {
             // Fetch subjects for the selected course
@@ -86,13 +99,23 @@ function CurriculumPage() {
     );
 
     const handleAddSubject = () => {
-        post('/curriculum', {
+        // Create the form data with the current selected course
+        const formData = {
+            ...data,
+            course_id: selectedCourse,
+        };
+
+        console.log('Adding subject to course ID:', selectedCourse);
+        console.log('Form data being sent:', formData);
+
+        // Pass formData directly as the second argument
+        router.post('/curriculum', formData, {
             preserveState: true,
             preserveScroll: true,
             onSuccess: (page) => {
                 setDialogOpen(false);
                 reset();
-                // Update the curriculums state with the new data
+                // Make sure to update with the latest data
                 setCurriculums(page.props.curriculums);
                 toast.success('Subject added successfully');
             },

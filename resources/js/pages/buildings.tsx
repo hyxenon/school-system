@@ -535,7 +535,12 @@ export default function Index({ buildings, rooms, filters = {} }: Props) {
                                 <Input
                                     id="building-name"
                                     value={buildingName}
-                                    onChange={(e) => setBuildingName(e.target.value)}
+                                    onChange={(e) => {
+                                        setBuildingName(e.target.value);
+                                        if (formErrors.name) {
+                                            setFormErrors((prevErrors) => ({ ...prevErrors, name: undefined }));
+                                        }
+                                    }}
                                     placeholder="Enter building name"
                                     className={formErrors.name ? 'border-destructive' : ''}
                                 />
@@ -569,7 +574,12 @@ export default function Index({ buildings, rooms, filters = {} }: Props) {
                                 <Input
                                     id="room-name"
                                     value={roomName}
-                                    onChange={(e) => setRoomName(e.target.value)}
+                                    onChange={(e) => {
+                                        setRoomName(e.target.value);
+                                        if (formErrors.name) {
+                                            setFormErrors((prevErrors) => ({ ...prevErrors, name: undefined }));
+                                        }
+                                    }}
                                     placeholder="Enter room name"
                                     className={formErrors.name ? 'border-destructive' : ''}
                                 />
@@ -582,7 +592,15 @@ export default function Index({ buildings, rooms, filters = {} }: Props) {
                             </div>
                             <div className="grid gap-2">
                                 <Label htmlFor="room-building">Building</Label>
-                                <Select value={selectedBuildingId} onValueChange={(value) => setSelectedBuildingId(value)}>
+                                <Select
+                                    value={selectedBuildingId}
+                                    onValueChange={(value) => {
+                                        setSelectedBuildingId(value);
+                                        if (formErrors.building_id) {
+                                            setFormErrors((prevErrors) => ({ ...prevErrors, building_id: undefined }));
+                                        }
+                                    }}
+                                >
                                     <SelectTrigger
                                         id="room-building"
                                         className={`flex h-10 w-full rounded-md border ${formErrors.building_id ? 'border-destructive' : 'border-input'} bg-background ring-offset-background focus-visible:ring-ring px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none`}
