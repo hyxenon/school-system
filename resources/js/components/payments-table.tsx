@@ -43,6 +43,16 @@ const PaymentTransactionTable = ({ data }) => {
         router.get(newUrl.toString());
     };
 
+    if (!transactions.length) {
+        return (
+            <Card className="w-full">
+                <CardHeader>
+                    <CardDescription>No payment transactions found</CardDescription>
+                </CardHeader>
+            </Card>
+        );
+    }
+
     return (
         <Card className="w-full">
             <CardHeader>
