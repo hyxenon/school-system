@@ -47,6 +47,7 @@ export function AddEmployeeDialog({ departments, employee, trigger }: EmployeeDi
         setValue,
         watch,
         reset: resetReactHookForm,
+        clearErrors,
         formState: { errors },
     } = useForm<EmployeeFormData>({
         defaultValues: {
@@ -142,8 +143,11 @@ export function AddEmployeeDialog({ departments, employee, trigger }: EmployeeDi
                             <Input
                                 id="name"
                                 className="col-span-3"
-                                {...register('name', { required: true })}
-                                onChange={(e) => setData('name', e.target.value)}
+                                {...register('name', { required: 'Name is required' })}
+                                onChange={(e) => {
+                                    setData('name', e.target.value);
+                                    clearErrors('name');
+                                }}
                             />
                             {(errors.name || serverErrors.name) && (
                                 <p className="col-span-3 col-start-2 text-sm text-red-500">
@@ -161,10 +165,16 @@ export function AddEmployeeDialog({ departments, employee, trigger }: EmployeeDi
                                 type="email"
                                 className="col-span-3"
                                 {...register('email', {
-                                    required: true,
-                                    pattern: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                                    required: 'Valid email is required',
+                                    pattern: {
+                                        value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                                        message: 'Invalid email address',
+                                    },
                                 })}
-                                onChange={(e) => setData('email', e.target.value)}
+                                onChange={(e) => {
+                                    setData('email', e.target.value);
+                                    clearErrors('email');
+                                }}
                             />
                             {(errors.email || serverErrors.email) && (
                                 <p className="col-span-3 col-start-2 text-sm text-red-500">
