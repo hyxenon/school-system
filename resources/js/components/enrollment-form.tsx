@@ -28,7 +28,6 @@ export function EnrollmentForm({
     currentStudentName = '',
 }: EnrollmentFormProps) {
     // Initialize studentCourse state
-
     const [studentCourse, setStudentCourse] = useState('');
     const [studentDepartment, setStudentDepartment] = useState('');
 
@@ -46,6 +45,7 @@ export function EnrollmentForm({
 
             // Set course ID in form data
             updateFormData('course_id', selectedStudent.course.id.toString());
+            delete errors.course_id; // Clear error
 
             // Find department for the course
             if (selectedStudent.course.department_id) {
@@ -56,6 +56,7 @@ export function EnrollmentForm({
 
                     // Set department ID in form data
                     updateFormData('department_id', dept.id.toString());
+                    delete errors.department_id; // Clear error
                 }
             }
         } else {
@@ -85,6 +86,7 @@ export function EnrollmentForm({
             }
         }
     }, [isEditMode, formData.course_id, formData.department_id, courses, departments]);
+
     return (
         <div className="grid gap-4 py-4">
             {isEditMode ? (
@@ -100,7 +102,14 @@ export function EnrollmentForm({
                         Student <span className="text-red-500">*</span>
                     </Label>
                     <div className="col-span-3">
-                        <Select value={formData.student_id} onValueChange={handleStudentSelect}>
+                        <Select
+                            value={formData.student_id}
+                            onValueChange={(value) => {
+                                handleStudentSelect(value);
+                                updateFormData('student_id', value);
+                                delete errors.student_id; // Clear error
+                            }}
+                        >
                             <SelectTrigger className={errors.student_id ? 'border-red-500' : ''}>
                                 <SelectValue placeholder="Select student" />
                             </SelectTrigger>
@@ -144,7 +153,13 @@ export function EnrollmentForm({
                     Academic Year <span className="text-red-500">*</span>
                 </Label>
                 <div className="col-span-3">
-                    <Select value={formData.academic_year} onValueChange={(value) => updateFormData('academic_year', value)}>
+                    <Select
+                        value={formData.academic_year}
+                        onValueChange={(value) => {
+                            updateFormData('academic_year', value);
+                            delete errors.academic_year; // Clear error
+                        }}
+                    >
                         <SelectTrigger className={errors.academic_year ? 'border-red-500' : ''}>
                             <SelectValue placeholder="Select academic year" />
                         </SelectTrigger>
@@ -163,7 +178,13 @@ export function EnrollmentForm({
                     Semester <span className="text-red-500">*</span>
                 </Label>
                 <div className="col-span-3">
-                    <Select value={formData.semester} onValueChange={(value) => updateFormData('semester', value)}>
+                    <Select
+                        value={formData.semester}
+                        onValueChange={(value) => {
+                            updateFormData('semester', value);
+                            delete errors.semester; // Clear error
+                        }}
+                    >
                         <SelectTrigger className={errors.semester ? 'border-red-500' : ''}>
                             <SelectValue placeholder="Select semester" />
                         </SelectTrigger>
@@ -182,7 +203,13 @@ export function EnrollmentForm({
                     Status <span className="text-red-500">*</span>
                 </Label>
                 <div className="col-span-3">
-                    <Select value={formData.status} onValueChange={(value) => updateFormData('status', value as any)}>
+                    <Select
+                        value={formData.status}
+                        onValueChange={(value) => {
+                            updateFormData('status', value as any);
+                            delete errors.status; // Clear error
+                        }}
+                    >
                         <SelectTrigger className={errors.status ? 'border-red-500' : ''}>
                             <SelectValue placeholder="Select status" />
                         </SelectTrigger>
@@ -201,7 +228,13 @@ export function EnrollmentForm({
                     Payment <span className="text-red-500">*</span>
                 </Label>
                 <div className="col-span-3">
-                    <Select value={formData.payment_status} onValueChange={(value) => updateFormData('payment_status', value as any)}>
+                    <Select
+                        value={formData.payment_status}
+                        onValueChange={(value) => {
+                            updateFormData('payment_status', value as any);
+                            delete errors.payment_status; // Clear error
+                        }}
+                    >
                         <SelectTrigger className={errors.payment_status ? 'border-red-500' : ''}>
                             <SelectValue placeholder="Select payment status" />
                         </SelectTrigger>
