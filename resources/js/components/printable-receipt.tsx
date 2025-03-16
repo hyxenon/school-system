@@ -123,8 +123,14 @@ const PrintableReceipt = ({ receiptData }) => {
                     <div class="info-label">Student Name:</div>
                     <div class="info-value">${receiptData.student_name}</div>
                     
+                    ${
+                        receiptData.course
+                            ? `
                     <div class="info-label">Course:</div>
                     <div class="info-value">${receiptData.course}</div>
+                    `
+                            : ''
+                    }
                 </div>
                 
                 <div class="info-block">
@@ -134,57 +140,77 @@ const PrintableReceipt = ({ receiptData }) => {
                     <div class="info-label">Time:</div>
                     <div class="info-value">${receiptData.payment_time}</div>
                     
+                    ${
+                        receiptData.academic_year
+                            ? `
                     <div class="info-label">Academic Year:</div>
                     <div class="info-value">${receiptData.academic_year}, Semester ${receiptData.semester}</div>
+                    `
+                            : ''
+                    }
                 </div>
             </div>
                     
-                    <div class="payment-details">
-                        <div class="info-label">Payment Details:</div>
-                        <div class="info-section">
-                            <div class="info-block">
-                                <div class="info-label">Previous Balance:</div>
-                                <div class="info-value">₱${receiptData.previous_balance.toLocaleString()}</div>
-                                
-                                <div class="info-label">Amount Paid:</div>
-                                <div class="info-value amount">₱${receiptData.amount.toLocaleString()}</div>
-                            </div>
-                            
-                            <div class="info-block">
-                                <div class="info-label">Payment Method:</div>
-                                <div class="info-value">${receiptData.payment_method}</div>
-                                
-                                <div class="info-label">New Balance:</div>
-                                <div class="info-value">₱${receiptData.new_balance.toLocaleString()}</div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="signature">
-                        <div>
-                            <div class="signature-line"></div>
-                            <div>Student Signature</div>
-                        </div>
+            <div class="payment-details">
+                <div class="info-label">Payment Details:</div>
+                <div class="info-section">
+                    <div class="info-block">
+                        ${
+                            receiptData.previous_balance !== undefined
+                                ? `
+                        <div class="info-label">Previous Balance:</div>
+                        <div class="info-value">₱${receiptData.previous_balance.toLocaleString()}</div>
+                        `
+                                : ''
+                        }
                         
-                        <div>
-                            <div class="signature-line">${receiptData.cashier}</div>
-                            <div>Cashier</div>
-                        </div>
+                        <div class="info-label">Amount Paid:</div>
+                        <div class="info-value amount">₱${receiptData.amount.toLocaleString()}</div>
                     </div>
                     
-                    <div class="footer">
-                        <p>This is an official receipt of payment. Please keep this for your records.</p>
-                        <p>For inquiries, please contact the Treasury Department.</p>
+                    <div class="info-block">
+                        <div class="info-label">Payment Method:</div>
+                        <div class="info-value">${receiptData.payment_method}</div>
+                        
+                        ${
+                            receiptData.new_balance !== undefined
+                                ? `
+                        <div class="info-label">New Balance:</div>
+                        <div class="info-value">₱${receiptData.new_balance.toLocaleString()}</div>
+                        `
+                                : ''
+                        }
                     </div>
+                </div>
+                <div class="info-label">Payment Type:</div>
+                <div class="info-value">${receiptData.payment_type}</div>
+            </div>
+                    
+            <div class="signature">
+                <div>
+                    <div class="signature-line"></div>
+                    <div>Student Signature</div>
                 </div>
                 
-                <div class="no-print" style="text-align: center; margin-top: 20px;">
-                    <button onclick="window.print();" style="padding: 10px 20px; background: #D68722; color: white; border: none; border-radius: 4px; cursor: pointer;">
-                        Print Receipt
-                    </button>
+                <div>
+                    <div class="signature-line">${receiptData.cashier}</div>
+                    <div>Cashier</div>
                 </div>
-            </body>
-            </html>
+            </div>
+                    
+            <div class="footer">
+                <p>This is an official receipt of payment. Please keep this for your records.</p>
+                <p>For inquiries, please contact the Treasury Department.</p>
+            </div>
+        </div>
+                
+        <div class="no-print" style="text-align: center; margin-top: 20px;">
+            <button onclick="window.print();" style="padding: 10px 20px; background: #D68722; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                Print Receipt
+            </button>
+        </div>
+    </body>
+    </html>
         `);
 
         printWindow.document.close();

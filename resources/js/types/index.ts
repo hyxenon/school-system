@@ -96,7 +96,8 @@ export interface Grade {
 export interface Payment {
     id: number;
     student: Student;
-    enrollment: Enrollment;
+    enrollment?: Enrollment;
+    document_type?: string;
     amount: number;
     payment_method: 'Cash' | 'Bank Transfer' | 'Online';
     payment_date: string;

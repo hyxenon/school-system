@@ -1,22 +1,6 @@
-import { format } from 'date-fns';
-import {
-    Banknote,
-    BookOpen,
-    Building2,
-    Calendar,
-    CalendarIcon,
-    CreditCard,
-    DollarSign,
-    FileText,
-    GraduationCap,
-    Loader2,
-    RefreshCw,
-    Search,
-    User,
-} from 'lucide-react';
-import { useEffect, useState } from 'react';
-
+import PaymentsTable from '@/components/payments-table';
 import PrintableReceipt from '@/components/printable-receipt';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
     AlertDialog,
     AlertDialogContent,
@@ -36,9 +20,23 @@ import { Separator } from '@/components/ui/separator';
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem, SharedData } from '@/types';
 import { Head, router, usePage } from '@inertiajs/react';
-
-import PaymentsTable from '@/components/payments-table';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { format } from 'date-fns';
+import {
+    Banknote,
+    BookOpen,
+    Building2,
+    Calendar,
+    CalendarIcon,
+    CreditCard,
+    DollarSign,
+    FileText,
+    GraduationCap,
+    Loader2,
+    RefreshCw,
+    Search,
+    User,
+} from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { Toaster } from 'sonner';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -49,25 +47,22 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 const TreasuryPaymentPage = ({ studentData = null, receiptData = null, success = false, payments }) => {
-    // Get authenticated user
     const { auth } = usePage<SharedData>().props;
-
-    // Application states
+    console.log(studentData);
     const [searchQuery, setSearchQuery] = useState('');
     const [isSearching, setIsSearching] = useState(false);
     const [student, setStudent] = useState(studentData);
     const [amount, setAmount] = useState('');
     const [paymentMethod, setPaymentMethod] = useState('Cash');
+    const [paymentType, setPaymentType] = useState('Tuition'); // New state for payment type
     const [showSuccess, setShowSuccess] = useState(success);
     const [processingPayment, setProcessingPayment] = useState(false);
     const [showAlert, setShowAlert] = useState(false);
     const [studentId, setStudentId] = useState('');
 
-    // Current date is automatically set and fixed
     const currentDate = format(new Date(), 'yyyy-MM-dd');
     const formattedDate = format(new Date(), 'MMMM d, yyyy');
 
-    // Check for the alert query parameter and set the showAlert state
     useEffect(() => {
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('alert') === 'true' && !studentData) {
@@ -77,7 +72,6 @@ const TreasuryPaymentPage = ({ studentData = null, receiptData = null, success =
         setStudentId(urlParams.get('student'));
     }, [studentData]);
 
-    // Set student data if provided via props
     useEffect(() => {
         if (studentData) {
             setStudent(studentData);
@@ -88,20 +82,31 @@ const TreasuryPaymentPage = ({ studentData = null, receiptData = null, success =
         }
     }, [studentData, receiptData]);
 
+    useEffect(() => {
+        // Automatically set the amount for document types
+        if (paymentType === 'COG') {
+            setAmount('100');
+        } else if (paymentType === 'TOR') {
+            setAmount('150');
+        } else if (paymentType === 'Incomplete Form') {
+            setAmount('125');
+        } else {
+            setAmount('');
+        }
+    }, [paymentType]);
+
     const handleSearch = () => {
         if (!searchQuery.trim()) return;
 
         setIsSearching(true);
 
-        // Use Inertia to navigate to the URL with the student parameter
         router.get(
             '/payments',
-            { student: searchQuery, alert: 'true' }, // Add alert query parameter
+            { student: searchQuery, alert: 'true' },
             {
                 onFinish: () => {
                     setIsSearching(false);
 
-                    // If no student was found, show an error toast
                     if (!studentData) {
                         setShowAlert(true);
                     }
@@ -115,27 +120,29 @@ const TreasuryPaymentPage = ({ studentData = null, receiptData = null, success =
 
         setProcessingPayment(true);
 
-        // Use Inertia's router.post to submit the payment
-        router.post(
-            '/payments',
-            {
-                student_id: student.id,
-                enrollment_id: student.enrollment[0]?.id, // Include the enrollment_id
-                amount: parseFloat(amount),
-                payment_method: paymentMethod,
-                payment_date: currentDate, // Include the payment_date
+        const paymentData = {
+            student_id: student.id,
+            amount: parseFloat(amount),
+            payment_method: paymentMethod,
+            payment_type: paymentType,
+            payment_date: currentDate,
+        };
+
+        if (paymentType === 'Tuition') {
+            paymentData.enrollment_id = student.enrollment[0]?.id;
+        } else {
+            paymentData.document_type = paymentType;
+        }
+
+        router.post('/payments', paymentData, {
+            onFinish: () => {
+                setProcessingPayment(false);
             },
-            {
-                onFinish: () => {
-                    setProcessingPayment(false);
-                },
-            },
-        );
+        });
     };
 
     const resetForm = () => {
         setSearchQuery('');
-        // Navigate back to the payments page without student parameter
         router.get('/payments');
     };
 
@@ -143,6 +150,7 @@ const TreasuryPaymentPage = ({ studentData = null, receiptData = null, success =
         setShowSuccess(false);
         setAmount('');
         setPaymentMethod('Cash');
+        setPaymentType('Tuition');
     };
 
     return (
@@ -151,7 +159,7 @@ const TreasuryPaymentPage = ({ studentData = null, receiptData = null, success =
             <Toaster />
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
                 {showAlert && (
-                    <Alert className="mb-8" variant="destructive" onClose={() => setShowAlert(false)}>
+                    <Alert className="mb-2" variant="destructive" onClose={() => setShowAlert(false)}>
                         <AlertTitle>Student Not Found: {studentId}</AlertTitle>
                         <AlertDescription>No student was found with the provided ID. Please check the ID and try again.</AlertDescription>
                     </Alert>
@@ -194,7 +202,7 @@ const TreasuryPaymentPage = ({ studentData = null, receiptData = null, success =
                 {student && student.user && (
                     <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
                         <Card className="overflow-hidden">
-                            <CardHeader className="bg-primary/5 pb-4">
+                            <CardHeader className="bg-primary/5 p-4">
                                 <CardTitle className="flex items-center gap-2">
                                     <User className="h-5 w-5" />
                                     Student Information
@@ -280,7 +288,7 @@ const TreasuryPaymentPage = ({ studentData = null, receiptData = null, success =
                         </Card>
 
                         <Card>
-                            <CardHeader className="bg-primary/5 pb-4">
+                            <CardHeader className="bg-primary/5 p-4">
                                 <CardTitle className="flex items-center gap-2">
                                     <DollarSign className="h-5 w-5" />
                                     Payment Details
@@ -288,20 +296,37 @@ const TreasuryPaymentPage = ({ studentData = null, receiptData = null, success =
                                 <CardDescription>Enter payment information</CardDescription>
                             </CardHeader>
                             <CardContent className="pt-6">
-                                <div className="bg-muted/30 mb-6 grid grid-cols-2 gap-4 rounded-lg p-4">
-                                    <div className="space-y-1">
-                                        <p className="text-muted-foreground text-sm">Total Fee</p>
-                                        <p className="text-lg font-bold">₱{student.enrollment[0]?.total_fee?.toLocaleString() || '0'}</p>
+                                {paymentType === 'Tuition' && (
+                                    <div className="bg-muted/30 mb-6 grid grid-cols-2 gap-4 rounded-lg p-4">
+                                        <div className="space-y-1">
+                                            <p className="text-muted-foreground text-sm">Total Fee</p>
+                                            <p className="text-lg font-bold">₱{student.enrollment[0]?.total_fee?.toLocaleString() || '0'}</p>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <p className="text-muted-foreground text-sm">Remaining Balance</p>
+                                            <p className="text-lg font-bold text-red-500">
+                                                ₱{student.enrollment[0]?.remaining_balance?.toLocaleString() || '0'}
+                                            </p>
+                                        </div>
                                     </div>
-                                    <div className="space-y-1">
-                                        <p className="text-muted-foreground text-sm">Remaining Balance</p>
-                                        <p className="text-lg font-bold text-red-500">
-                                            ₱{student.enrollment[0]?.remaining_balance?.toLocaleString() || '0'}
-                                        </p>
-                                    </div>
-                                </div>
+                                )}
 
                                 <div className="space-y-4">
+                                    <div>
+                                        <Label htmlFor="paymentType">Payment Type</Label>
+                                        <Select value={paymentType} onValueChange={setPaymentType}>
+                                            <SelectTrigger id="paymentType" className="mt-1 w-full">
+                                                <SelectValue placeholder="Select payment type" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="Tuition">Tuition</SelectItem>
+                                                <SelectItem value="COG">Certificate of Grades (COG)</SelectItem>
+                                                <SelectItem value="TOR">Transcript of Records (TOR)</SelectItem>
+                                                <SelectItem value="Incomplete Form">Incomplete Form</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
                                     <div>
                                         <Label htmlFor="amount">Payment Amount</Label>
                                         <div className="relative mt-1">
@@ -313,6 +338,7 @@ const TreasuryPaymentPage = ({ studentData = null, receiptData = null, success =
                                                 placeholder="Enter amount"
                                                 value={amount}
                                                 onChange={(e) => setAmount(e.target.value)}
+                                                readOnly={paymentType !== 'Tuition'} // Make amount read-only for document types
                                             />
                                         </div>
                                     </div>
@@ -417,10 +443,12 @@ const TreasuryPaymentPage = ({ studentData = null, receiptData = null, success =
                                                 <div>
                                                     <span className="font-medium">Status:</span> Completed
                                                 </div>
-                                                <div className="mt-2">
-                                                    <span className="font-medium">New Remaining Balance:</span> ₱
-                                                    {receiptData.new_balance.toLocaleString()}
-                                                </div>
+                                                {receiptData.new_balance !== undefined && (
+                                                    <div className="mt-2">
+                                                        <span className="font-medium">New Remaining Balance:</span> ₱
+                                                        {receiptData.new_balance.toLocaleString()}
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     </>

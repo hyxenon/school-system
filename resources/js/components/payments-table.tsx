@@ -62,6 +62,7 @@ const PaymentTransactionTable = ({ data }) => {
                 <Table>
                     <TableHeader>
                         <TableRow>
+                            <TableHead>Document Type</TableHead>
                             <TableHead>Amount</TableHead>
                             <TableHead>Payment Method</TableHead>
                             <TableHead>Payment Date</TableHead>
@@ -71,10 +72,11 @@ const PaymentTransactionTable = ({ data }) => {
                     <TableBody>
                         {transactions.map((transaction) => (
                             <TableRow key={transaction.id}>
+                                <TableCell>{transaction.enrollment_id ? 'Tuition' : transaction.document_type}</TableCell>
                                 <TableCell>{formatCurrency(transaction.amount)}</TableCell>
                                 <TableCell>{transaction.payment_method}</TableCell>
                                 <TableCell>{formatDate(transaction.payment_date)}</TableCell>
-                                <TableCell>{formatCurrency(transaction.enrollment.total_fee)}</TableCell>
+                                <TableCell>{formatCurrency(transaction.enrollment_id ? transaction.enrollment.total_fee : 100)}</TableCell>
                             </TableRow>
                         ))}
                     </TableBody>
