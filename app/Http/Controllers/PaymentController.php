@@ -32,6 +32,7 @@ class PaymentController extends Controller
             if ($student) {
                 $payments = Payment::where('student_id', $student->id)
                     ->with('enrollment')
+                    ->orderBy('payment_date', 'desc')
                     ->paginate(10);
             }
         }
