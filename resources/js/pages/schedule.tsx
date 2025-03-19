@@ -29,10 +29,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem, Building, Course, Employee, Room, Schedule, Subject } from '@/types';
-import { Head, router, usePage } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import { Clock, Search, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { Toaster } from 'sonner';
+import { toast, Toaster } from 'sonner';
 
 interface SchedulesIndexProps {
     schedules: Schedule[];
@@ -58,8 +58,6 @@ export default function SchedulesIndex({ schedules, subjects, professors, rooms,
     const [dayFilter, setDayFilter] = useState<string>('');
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
-
-    const { route } = usePage().props;
 
     // Filter schedules based on search term and filters
     const filteredSchedules = useMemo(() => {
@@ -88,7 +86,10 @@ export default function SchedulesIndex({ schedules, subjects, professors, rooms,
     const handleDelete = () => {
         if (deleteId) {
             router.delete(route('schedules.destroy', deleteId), {
-                onSuccess: () => setDeleteId(null),
+                onSuccess: () => {
+                    setDeleteId(null);
+                    toast.success('Schedule deleted successfully.');
+                },
             });
         }
     };
