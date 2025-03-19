@@ -58,9 +58,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 
 
-    // Professor
-    Route::get('/my-schedules', [ScheduleController::class, 'getTeacherSchedule'])
-        ->name('my-schedules');
+    // Schedule Routes
+    Route::get('/my-schedules', function () {
+        $user = auth()->user();
+        if ($user->employee) {
+            return app(ScheduleController::class)->getTeacherSchedule(request());
+        }
+        if ($user->student) {
+            return app(ScheduleController::class)->getStudentSchedule(request());
+        }
+        return redirect()->route('dashboard')->with('error', 'Unauthorized access');
+    })->name('my-schedules');
 });
 
 

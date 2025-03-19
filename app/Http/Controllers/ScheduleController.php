@@ -224,9 +224,36 @@ class ScheduleController extends Controller
             ->orderBy('start_time')
             ->get();
 
+        return $this->renderSchedule($schedules, 'teacher');
+    }
+
+    public function getStudentSchedule(Request $request)
+    {
+        $student = auth()->user()->student;
+
+        $schedules = Schedule::with(['subject', 'room.building'])
+            ->where('course_id', $student->course_id)
+            ->where('year_level', $student->year_level)
+            ->where('block', $student->block)
+            ->where('status', 'Active')
+            ->when($request->academic_year, function ($query) use ($request) {
+                return $query->where('academic_year', $request->academic_year);
+            })
+            ->when($request->semester, function ($query) use ($request) {
+                return $query->where('semester', $request->semester);
+            })
+            ->orderBy('day')
+            ->orderBy('start_time')
+            ->get();
+
+        return $this->renderSchedule($schedules, 'student');
+    }
+
+    private function renderSchedule($schedules, $type)
+    {
         return Inertia::render('my-schedules', [
             'schedules' => $schedules,
-            'type' => 'teacher'
+            'type' => $type
         ]);
     }
 }

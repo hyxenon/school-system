@@ -73,9 +73,9 @@ const roleBasedNavItems: Record<string, NavItem[]> = {
     ],
     student: [
         {
-            title: 'My Courses',
-            url: 'courses',
-            icon: BriefcaseBusiness, // Change to appropriate icon
+            title: 'My Schedules',
+            url: '/my-schedules',
+            icon: CalendarIcon, // Change to appropriate icon
         },
     ],
     'program head': [
