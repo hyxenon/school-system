@@ -92,8 +92,8 @@ class ScheduleController extends Controller
             'professor_id' => 'required|exists:employees,id',
             'course_id' => 'required|exists:courses,id', // Add course validation
             'day' => 'required|in:Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday',
-            'start_time' => 'required|date_format:H:i',
-            'end_time' => 'required|date_format:H:i|after:start_time',
+            'start_time' => ['required', 'regex:/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/'],
+            'end_time' => ['required', 'regex:/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/', 'after:start_time'],
             'block' => 'required|string|max:255',
             'year_level' => 'required|integer|min:1|max:6',
             'academic_year' => 'required|string',
@@ -102,6 +102,10 @@ class ScheduleController extends Controller
             'max_students' => 'required|integer|min:1',
             'status' => 'required|in:Active,Inactive,Cancelled'
         ]);
+
+        // Format times to proper HH:mm:ss format
+        $validated['start_time'] = date('H:i:s', strtotime($validated['start_time']));
+        $validated['end_time'] = date('H:i:s', strtotime($validated['end_time']));
 
         // Check for scheduling conflicts
         $conflict = Schedule::where('day', $request->day)
@@ -132,71 +136,67 @@ class ScheduleController extends Controller
     }
 
 
-
-    public function edit($id)
+    public function update(Request $request, Schedule $schedule)
     {
-        $schedule = Schedule::findOrFail($id);
-        $subjects = Subject::with('course')->get();
-        $professors = Employee::where('position', 'professor')
-            ->with('user')
-            ->get();
-        $rooms = Room::with('building')->get();
-        $courses = \App\Models\Course::select('id', 'name', 'course_code')->get(); // Add courses
+        // Format times to match database format
+        $formattedStartTime = date('H:i:s', strtotime($request->start_time));
+        $formattedEndTime = date('H:i:s', strtotime($request->end_time));
 
-        return Inertia::render('schedule', [
-            'schedule' => $schedule,
-            'subjects' => $subjects,
-            'professors' => $professors,
-            'rooms' => $rooms,
-            'courses' => $courses // Add courses to response
-        ]);
-    }
-
-    public function update(Request $request, $id)
-    {
-        $request->validate([
+        $validated = $request->validate([
             'subject_id' => 'required|exists:subjects,id',
-            'room_id' => 'required|exists:rooms,id',
             'professor_id' => 'required|exists:employees,id',
-            'course_id' => 'required|exists:courses,id', // Add course validation
+            'room_id' => 'required|exists:rooms,id',
+            'course_id' => 'required|exists:courses,id',
             'day' => 'required|in:Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday',
-            'start_time' => 'required|date_format:H:i',
-            'end_time' => 'required|date_format:H:i|after:start_time',
-            'block' => 'required|string|max:255',
+            'start_time' => 'required',
+            'end_time' => 'required',
             'year_level' => 'required|integer|min:1|max:6',
+            'block' => 'required|string',
             'academic_year' => 'required|string',
-            'semester' => 'required|in:1,2,3',
+            'semester' => 'required|integer|min:1|max:3',
             'schedule_type' => 'required|in:Lecture,Laboratory,Hybrid',
             'max_students' => 'required|integer|min:1',
-            'status' => 'required|in:Active,Inactive,Cancelled'
+            'status' => 'required|in:Active,Inactive,Cancelled',
         ]);
 
-        $conflict = Schedule::where('day', $request->day)
-            ->where('id', '!=', $id)
+        // Replace the times with formatted versions
+        $validated['start_time'] = $formattedStartTime;
+        $validated['end_time'] = $formattedEndTime;
+
+        // Verify end time is after start time
+        if (strtotime($formattedEndTime) <= strtotime($formattedStartTime)) {
+            return back()->withErrors(['end_time' => 'The end time must be after start time']);
+        }
+
+        // Check for scheduling conflicts, excluding the current schedule being updated
+        $conflict = Schedule::where('id', '!=', $schedule->id)
+            ->where('day', $request->day)
             ->where(function ($query) use ($request) {
                 $query->where('room_id', $request->room_id)
                     ->orWhere('professor_id', $request->professor_id);
             })
-            ->where(function ($query) use ($request) {
-                $query->whereBetween('start_time', [$request->start_time, $request->end_time])
-                    ->orWhereBetween('end_time', [$request->start_time, $request->end_time])
-                    ->orWhere(function ($query) use ($request) {
-                        $query->where('start_time', '<', $request->start_time)
-                            ->where('end_time', '>', $request->end_time);
+            ->where(function ($query) use ($formattedStartTime, $formattedEndTime) {
+                $query->whereBetween('start_time', [$formattedStartTime, $formattedEndTime])
+                    ->orWhereBetween('end_time', [$formattedStartTime, $formattedEndTime])
+                    ->orWhere(function ($query) use ($formattedStartTime, $formattedEndTime) {
+                        $query->where('start_time', '<', $formattedStartTime)
+                            ->where('end_time', '>', $formattedEndTime);
                     });
             })
-            ->where('start_time', '!=', $request->end_time)
-            ->where('end_time', '!=', $request->start_time)
+            ->where('start_time', '!=', $formattedEndTime)
+            ->where('end_time', '!=', $formattedStartTime)
             ->exists();
 
         if ($conflict) {
             return back()->withErrors(['conflict' => 'The schedule conflicts with an existing schedule.']);
         }
 
-        $schedule = Schedule::findOrFail($id);
-        $schedule->update($request->all());
+        $schedule->update($validated);
 
-        return redirect()->route('schedules.index')->with('success', 'Schedule updated successfully.');
+
+
+        return redirect()->route('schedules.index')
+            ->with('success', 'Schedule updated successfully.');
     }
 
     public function destroy($id)

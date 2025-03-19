@@ -293,9 +293,15 @@ export default function SchedulesIndex({ schedules, subjects, professors, rooms,
                                         </TableCell>
                                         <TableCell>
                                             <div className="flex items-center gap-2">
-                                                <Button variant="outline" size="sm" onClick={() => router.get(route('schedules.edit', schedule.id))}>
-                                                    Edit
-                                                </Button>
+                                                <ScheduleCreateModal
+                                                    subjects={subjects}
+                                                    professors={professors}
+                                                    rooms={rooms}
+                                                    buildings={buildings}
+                                                    courses={courses}
+                                                    schedule={schedule}
+                                                    isEdit={true}
+                                                />
                                                 <Button variant="destructive" size="sm" onClick={() => setDeleteId(schedule.id)}>
                                                     Delete
                                                 </Button>
@@ -392,9 +398,20 @@ export default function SchedulesIndex({ schedules, subjects, professors, rooms,
 }
 
 function formatTime(time: string): string {
+    // Handle empty or invalid time
+    if (!time) return '';
+
     const [hours, minutes] = time.split(':');
     const hourNum = parseInt(hours, 10);
+
+    // Ensure valid hour number
+    if (isNaN(hourNum)) return time;
+
     const period = hourNum >= 12 ? 'PM' : 'AM';
     const formattedHours = hourNum % 12 || 12;
-    return `${formattedHours}:${minutes} ${period}`;
+
+    // Format minutes properly
+    const formattedMinutes = minutes ? minutes.slice(0, 2) : '00';
+
+    return `${formattedHours}:${formattedMinutes} ${period}`;
 }
