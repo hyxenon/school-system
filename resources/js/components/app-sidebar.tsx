@@ -122,7 +122,7 @@ const footerNavItems: NavItem[] = [
 
 export function AppSidebar() {
     const { auth } = usePage<SharedData>().props;
-    const userRole = auth.user.employee ? auth.user.employee.position : '';
+    const userRole = auth.user.employee ? auth.user.employee.position : auth.user.student ? 'student' : '';
     const roleNavItems = roleBasedNavItems[userRole] || [];
 
     const navItems = [...mainNavItems, ...roleNavItems];
