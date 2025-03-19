@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Building;
+use App\Models\Course;
 use Inertia\Inertia;
 use App\Models\Subject;
 use App\Models\Employee;
@@ -17,7 +18,8 @@ class ScheduleController extends Controller
         $query = Schedule::with([
             'subject',
             'room.building',
-            'professor.user'
+            'professor.user',
+            'course'
         ]);
 
         // Server-side filtering if needed
@@ -44,17 +46,26 @@ class ScheduleController extends Controller
                 ->orWhereHas('room', function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%");
                 })
+                ->orWhereHas('course', function ($q) use ($search) { // Add course search
+                    $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('course_code', 'like', "%{$search}%");
+                })
                 ->orWhere('day', 'like', "%{$search}%");
         }
 
         $schedules = $query->get();
+        $courses = Course::select('id', 'name', 'course_code')->get();
 
-        return Inertia::render('schedule', props: [
+        // Debug logging
+
+
+        return Inertia::render('schedule', [
             'schedules' => $schedules,
             'subjects' => Subject::select('id', 'name')->get(),
             'professors' => Employee::with('user:id,name')->get(),
             'rooms' => Room::with('building:id,name')->get(),
             'buildings' => Building::all(),
+            'courses' => $courses,
         ]);
     }
 
@@ -79,6 +90,7 @@ class ScheduleController extends Controller
             'subject_id' => 'required|exists:subjects,id',
             'room_id' => 'required|exists:rooms,id',
             'professor_id' => 'required|exists:employees,id',
+            'course_id' => 'required|exists:courses,id', // Add course validation
             'day' => 'required|in:Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday',
             'start_time' => 'required|date_format:H:i',
             'end_time' => 'required|date_format:H:i|after:start_time',
@@ -129,12 +141,14 @@ class ScheduleController extends Controller
             ->with('user')
             ->get();
         $rooms = Room::with('building')->get();
+        $courses = \App\Models\Course::select('id', 'name', 'course_code')->get(); // Add courses
 
         return Inertia::render('schedule', [
             'schedule' => $schedule,
             'subjects' => $subjects,
             'professors' => $professors,
-            'rooms' => $rooms
+            'rooms' => $rooms,
+            'courses' => $courses // Add courses to response
         ]);
     }
 
@@ -144,6 +158,7 @@ class ScheduleController extends Controller
             'subject_id' => 'required|exists:subjects,id',
             'room_id' => 'required|exists:rooms,id',
             'professor_id' => 'required|exists:employees,id',
+            'course_id' => 'required|exists:courses,id', // Add course validation
             'day' => 'required|in:Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday',
             'start_time' => 'required|date_format:H:i',
             'end_time' => 'required|date_format:H:i|after:start_time',

@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import type { Building, Employee, Room, Subject } from '@/types';
+import type { Building, Course, Employee, Room, Subject } from '@/types';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from '@inertiajs/react';
 import { Plus, Search, X } from 'lucide-react';
@@ -36,6 +36,7 @@ const scheduleSchema = z
         schedule_type: z.enum(['Lecture', 'Laboratory', 'Hybrid']),
         max_students: z.coerce.number().min(1, 'Max students is required'),
         status: z.enum(['Active', 'Inactive', 'Cancelled']),
+        course_id: z.coerce.number().min(1, 'Course is required'),
     })
     .refine((data) => data.end_time > data.start_time, {
         message: 'End time must be after start time',
@@ -47,15 +48,22 @@ interface ScheduleCreateModalProps {
     professors?: Employee[];
     rooms?: Room[];
     buildings?: Building[];
+    courses?: Course[];
 }
 
-export function ScheduleCreateModal({ subjects = [], professors = [], rooms = [], buildings = [] }: ScheduleCreateModalProps) {
+export function ScheduleCreateModal({ subjects = [], professors = [], rooms = [], buildings = [], courses = [] }: ScheduleCreateModalProps) {
     const [open, setOpen] = useState(false);
     const [subjectSearch, setSubjectSearch] = useState('');
     const [professorSearch, setProfessorSearch] = useState('');
     const [buildingSearch, setBuildingSearch] = useState('');
     const [roomSearch, setRoomSearch] = useState('');
+    const [courseSearch, setCourseSearch] = useState('');
     const inertiaForm = useForm();
+
+    console.log(courses);
+    console.log('Courses prop:', courses);
+    console.log('Courses type:', typeof courses);
+    console.log('Courses length:', courses?.length);
 
     const form = useHookForm<z.infer<typeof scheduleSchema>>({
         resolver: zodResolver(scheduleSchema),
@@ -74,6 +82,7 @@ export function ScheduleCreateModal({ subjects = [], professors = [], rooms = []
             schedule_type: 'Lecture',
             max_students: 30,
             status: 'Active',
+            course_id: undefined,
         },
     });
 
@@ -102,6 +111,15 @@ export function ScheduleCreateModal({ subjects = [], professors = [], rooms = []
                 (room.name.toLowerCase().includes(roomSearch.toLowerCase()) || room.building.name.toLowerCase().includes(roomSearch.toLowerCase())),
         );
     }, [rooms, roomSearch, form.watch]);
+
+    // Filter courses
+    const filteredCourses = useMemo(() => {
+        return courses.filter(
+            (course) =>
+                course.name.toLowerCase().includes(courseSearch.toLowerCase()) ||
+                course.course_code.toLowerCase().includes(courseSearch.toLowerCase()),
+        );
+    }, [courses, courseSearch]);
 
     const onSubmit = (values: z.infer<typeof scheduleSchema>) => {
         // Create a new object without building_id
@@ -156,6 +174,60 @@ export function ScheduleCreateModal({ subjects = [], professors = [], rooms = []
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
+                            {/* Course Selection */}
+                            <FormField
+                                control={form.control}
+                                name="course_id"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Course</FormLabel>
+                                        <Select
+                                            onValueChange={(value) => {
+                                                field.onChange(Number(value));
+                                                setCourseSearch('');
+                                            }}
+                                            value={field.value?.toString()}
+                                        >
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select a course" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent onKeyDown={(e) => e.stopPropagation()}>
+                                                <div className="p-2">
+                                                    <div className="relative">
+                                                        <Search className="text-muted-foreground absolute top-1/2 left-2 h-4 w-4 -translate-y-1/2" />
+                                                        <Input
+                                                            placeholder="Search courses..."
+                                                            value={courseSearch}
+                                                            onChange={(e) => setCourseSearch(e.target.value)}
+                                                            className="mb-2 pl-8"
+                                                            onKeyDown={(e) => e.stopPropagation()}
+                                                        />
+                                                        {courseSearch && (
+                                                            <X
+                                                                className="text-muted-foreground absolute top-1/2 right-2 h-4 w-4 -translate-y-1/2 cursor-pointer"
+                                                                onClick={() => setCourseSearch('')}
+                                                            />
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                {filteredCourses.length > 0 ? (
+                                                    filteredCourses.map((course) => (
+                                                        <SelectItem key={course.id} value={course.id.toString()}>
+                                                            {course.course_code} - {course.name}
+                                                        </SelectItem>
+                                                    ))
+                                                ) : (
+                                                    <div className="text-muted-foreground p-2 text-center">No courses found</div>
+                                                )}
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
                             {/* Subject Selection */}
                             <FormField
                                 control={form.control}

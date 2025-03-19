@@ -28,7 +28,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
-import type { BreadcrumbItem, Building, Employee, Room, Schedule, Subject } from '@/types';
+import type { BreadcrumbItem, Building, Course, Employee, Room, Schedule, Subject } from '@/types';
 import { Head, router, usePage } from '@inertiajs/react';
 import { Clock, Search, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
@@ -40,6 +40,7 @@ interface SchedulesIndexProps {
     professors: Employee[];
     rooms: Room[];
     buildings: Building[];
+    courses: Course[];
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -49,7 +50,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function SchedulesIndex({ schedules, subjects, professors, rooms, buildings }: SchedulesIndexProps) {
+export default function SchedulesIndex({ schedules, subjects, professors, rooms, buildings, courses }: SchedulesIndexProps) {
     const [deleteId, setDeleteId] = useState<number | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [subjectFilter, setSubjectFilter] = useState<string>('');
@@ -121,7 +122,7 @@ export default function SchedulesIndex({ schedules, subjects, professors, rooms,
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
                 <div className="flex items-center justify-between">
                     <h1 className="text-2xl font-bold">Schedules</h1>
-                    <ScheduleCreateModal subjects={subjects} professors={professors} rooms={rooms} buildings={buildings} />
+                    <ScheduleCreateModal subjects={subjects} professors={professors} rooms={rooms} buildings={buildings} courses={courses} />
                 </div>
 
                 {/* Filters */}
