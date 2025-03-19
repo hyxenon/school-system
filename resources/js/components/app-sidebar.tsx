@@ -60,12 +60,6 @@ const roleBasedNavItems: Record<string, NavItem[]> = {
     ],
     professor: [
         {
-            title: 'My Classes',
-            url: 'classes',
-            icon: BriefcaseBusiness, // Change to appropriate icon
-        },
-
-        {
             title: 'My Schedules',
             url: '/my-schedules',
             icon: CalendarIcon, // Change to appropriate icon

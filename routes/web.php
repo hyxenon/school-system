@@ -23,11 +23,8 @@ Route::get('/', function () {
 })->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('dashboard', function () {
-        return Inertia::render('dashboard');
-    })->name('dashboard');
 
-
+    Route::get('/dashboard', [AnnouncementController::class, 'getAnnouncements'])->name('get-announcements');
     // Registrar 
 
     Route::resource('employees', EmployeeController::class);
