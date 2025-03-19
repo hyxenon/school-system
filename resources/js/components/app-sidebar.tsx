@@ -51,11 +51,7 @@ const roleBasedNavItems: Record<string, NavItem[]> = {
             url: '/curriculum',
             icon: CurlyBracesIcon,
         },
-        {
-            title: 'Schedules',
-            url: '/schedules',
-            icon: CalendarIcon,
-        },
+
         {
             title: 'Announcements',
             url: '/announcements',
@@ -67,6 +63,12 @@ const roleBasedNavItems: Record<string, NavItem[]> = {
             title: 'My Classes',
             url: 'classes',
             icon: BriefcaseBusiness, // Change to appropriate icon
+        },
+
+        {
+            title: 'My Schedules',
+            url: 'my-schedules',
+            icon: CalendarIcon, // Change to appropriate icon
         },
     ],
     student: [
@@ -81,6 +83,11 @@ const roleBasedNavItems: Record<string, NavItem[]> = {
             title: 'Add Student',
             url: '/add-students',
             icon: BriefcaseBusiness, // Change to appropriate icon
+        },
+        {
+            title: 'Schedules',
+            url: '/schedules',
+            icon: CalendarIcon,
         },
     ],
     treasurer: [

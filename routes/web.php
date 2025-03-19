@@ -47,7 +47,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('announcements', AnnouncementController::class);
     Route::put('announcements/{announcement}/pin', [AnnouncementController::class, 'togglePin'])->name('announcements.pin');
 
-
     // Program Head
     Route::resource('add-students', StudentController::class);
 
@@ -56,6 +55,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Treasury
     Route::get('/payments', [PaymentController::class, 'index'])->name('payments.index');
     Route::post('/payments', [PaymentController::class, 'store'])->name('payments.store');
+
+
+
+    // Professor
+    Route::get('/my-schedules', [ScheduleController::class, 'getTeacherSchedule'])
+        ->name('my-schedules');
 });
 
 

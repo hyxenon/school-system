@@ -191,4 +191,27 @@ class ScheduleController extends Controller
 
         return redirect()->route('schedules.index')->with('success', 'Schedule deleted successfully.');
     }
+
+    public function getTeacherSchedule(Request $request)
+    {
+        $teacherId = auth()->user()->employee->id;
+
+        $schedules = Schedule::with(['subject', 'room.building'])
+            ->where('professor_id', $teacherId)
+            ->where('status', 'Active')
+            ->when($request->academic_year, function ($query) use ($request) {
+                return $query->where('academic_year', $request->academic_year);
+            })
+            ->when($request->semester, function ($query) use ($request) {
+                return $query->where('semester', $request->semester);
+            })
+            ->orderBy('day')
+            ->orderBy('start_time')
+            ->get();
+
+        return Inertia::render('my-schedules', [
+            'schedules' => $schedules,
+            'type' => 'teacher'
+        ]);
+    }
 }

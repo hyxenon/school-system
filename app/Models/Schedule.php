@@ -13,6 +13,7 @@ class Schedule extends Model
     protected $fillable = [
         'subject_id',
         'room_id',
+        'course_id',
         'professor_id',
         'academic_year',
         'semester',
@@ -44,5 +45,10 @@ class Schedule extends Model
     public function students()
     {
         return $this->belongsToMany(Student::class, 'schedule_student')->withTimestamps();
+    }
+
+    public function course()
+    {
+        return $this->belongsTo(Course::class);
     }
 }

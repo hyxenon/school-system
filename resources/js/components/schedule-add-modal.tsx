@@ -175,7 +175,7 @@ export function ScheduleCreateModal({ subjects = [], professors = [], rooms = []
                                                     <SelectValue placeholder="Select a subject" />
                                                 </SelectTrigger>
                                             </FormControl>
-                                            <SelectContent>
+                                            <SelectContent onKeyDown={(e) => e.stopPropagation()}>
                                                 <div className="p-2">
                                                     <div className="relative">
                                                         <Search className="text-muted-foreground absolute top-1/2 left-2 h-4 w-4 -translate-y-1/2" />
@@ -184,6 +184,7 @@ export function ScheduleCreateModal({ subjects = [], professors = [], rooms = []
                                                             value={subjectSearch}
                                                             onChange={(e) => setSubjectSearch(e.target.value)}
                                                             className="mb-2 pl-8"
+                                                            onKeyDown={(e) => e.stopPropagation()}
                                                         />
                                                         {subjectSearch && (
                                                             <X
