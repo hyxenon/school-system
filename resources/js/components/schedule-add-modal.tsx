@@ -22,10 +22,26 @@ declare global {
 
 const scheduleSchema = z
     .object({
-        subject_id: z.coerce.number().min(1, 'Subject is required'),
-        professor_id: z.coerce.number().min(1, 'Professor is required'),
-        building_id: z.coerce.number().min(1, 'Building is required'),
-        room_id: z.coerce.number().min(1, 'Room is required'),
+        subject_id: z.coerce
+            .number()
+            .optional()
+            .refine((val) => val !== undefined && val > 0, { message: 'Please select a subject' }),
+        professor_id: z.coerce
+            .number()
+            .optional()
+            .refine((val) => val !== undefined && val > 0, { message: 'Please select a professor' }),
+        building_id: z.coerce
+            .number()
+            .optional()
+            .refine((val) => val !== undefined && val > 0, { message: 'Please select a building' }),
+        room_id: z.coerce
+            .number()
+            .optional()
+            .refine((val) => val !== undefined && val > 0, { message: 'Please select a room' }),
+        course_id: z.coerce
+            .number()
+            .optional()
+            .refine((val) => val !== undefined && val > 0, { message: 'Please select a course' }),
         day: z.enum(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']),
         start_time: z.string().min(1, 'Start time is required'),
         end_time: z.string().min(1, 'End time is required'),
@@ -36,7 +52,6 @@ const scheduleSchema = z
         schedule_type: z.enum(['Lecture', 'Laboratory', 'Hybrid']),
         max_students: z.coerce.number().min(1, 'Max students is required'),
         status: z.enum(['Active', 'Inactive', 'Cancelled']),
-        course_id: z.coerce.number().min(1, 'Course is required'),
     })
     .refine((data) => data.end_time > data.start_time, {
         message: 'End time must be after start time',
@@ -122,13 +137,8 @@ export function ScheduleCreateModal({ subjects = [], professors = [], rooms = []
     }, [courses, courseSearch]);
 
     const onSubmit = (values: z.infer<typeof scheduleSchema>) => {
-        // Create a new object without building_id
         const { building_id, ...scheduleData } = values;
 
-        // Log the data being sent
-        console.log('Form data being submitted:', scheduleData);
-
-        // Use Inertia's form submission correctly
         inertiaForm.clearErrors();
         inertiaForm.transform((data) => ({
             ...data,
@@ -138,21 +148,32 @@ export function ScheduleCreateModal({ subjects = [], professors = [], rooms = []
         inertiaForm.post(window.route('schedules.store'), {
             preserveScroll: true,
             onSuccess: () => {
-                console.log('Form submitted successfully');
                 toast.success('Schedule created successfully');
                 setOpen(false);
                 form.reset();
             },
             onError: (errors) => {
-                console.error('Form submission errors:', errors);
+                const formattedErrors = Object.entries(errors).map(([key, value]) => {
+                    if (value === 'Expected number, received nan') {
+                        switch (key) {
+                            case 'subject_id':
+                                return 'Please select a subject';
+                            case 'professor_id':
+                                return 'Please select a professor';
+                            case 'building_id':
+                                return 'Please select a building';
+                            case 'room_id':
+                                return 'Please select a room';
+                            case 'course_id':
+                                return 'Please select a course';
+                            default:
+                                return value;
+                        }
+                    }
+                    return value;
+                });
 
-                if (errors.conflict) {
-                    toast.error(errors.conflict);
-                } else {
-                    // Show all validation errors
-                    const errorMessages = Object.values(errors).join(', ');
-                    toast.error(`Failed to create schedule: ${errorMessages}`);
-                }
+                toast.error(`Failed to create schedule: ${formattedErrors.join(', ')}`);
             },
         });
     };
@@ -165,7 +186,7 @@ export function ScheduleCreateModal({ subjects = [], professors = [], rooms = []
                 </Button>
             </DialogTrigger>
 
-            <DialogContent className="sm:max-w-[625px]">
+            <DialogContent className={'max-h-screen overflow-y-scroll sm:max-w-[625px]'}>
                 <DialogHeader>
                     <DialogTitle>Create New Schedule</DialogTitle>
                     <DialogDescription>Fill out the details for the new schedule</DialogDescription>
