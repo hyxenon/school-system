@@ -11,7 +11,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
@@ -396,70 +395,66 @@ function MyClassesPage({ classes, type }: MyClassesPageProps) {
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent className="p-0">
-                                    <ScrollArea className="h-[650px]">
-                                        {Object.entries(classesByDay).map(([day, dayClasses]) => (
-                                            <div key={day} className="border-b last:border-b-0">
-                                                <div className="bg-muted/80 flex items-center p-4 text-base font-semibold">
-                                                    <CalendarDays className="text-primary mr-3 h-5 w-5" />
-                                                    {day}
-                                                </div>
+                                    {Object.entries(classesByDay).map(([day, dayClasses]) => (
+                                        <div key={day} className="border-b last:border-b-0">
+                                            <div className="bg-muted/80 flex items-center p-4 text-base font-semibold">
+                                                <CalendarDays className="text-primary mr-3 h-5 w-5" />
+                                                {day}
+                                            </div>
 
-                                                {dayClasses.length > 0 ? (
-                                                    <div className="divide-y">
-                                                        {dayClasses.map((classItem) => (
-                                                            <div
-                                                                key={classItem.id}
-                                                                onClick={() => handleClassClick(classItem.id)}
-                                                                className="hover:bg-muted/30 hover:border-l-primary cursor-pointer border-l-2 border-transparent p-5 transition-colors"
-                                                            >
-                                                                <div className="flex flex-col gap-4 md:flex-row md:items-center">
-                                                                    <div className="w-32 flex-shrink-0">
-                                                                        <div className="text-sm font-medium">
-                                                                            {formatTime(classItem.start_time)} - {formatTime(classItem.end_time)}
-                                                                        </div>
-                                                                    </div>
-
-                                                                    <div className="flex-grow">
-                                                                        <div className="flex items-center gap-2">
-                                                                            <Avatar className="h-8 w-8">
-                                                                                <AvatarFallback className={getSubjectColor(classItem.subject.id)}>
-                                                                                    {getInitials(classItem.subject.name)}
-                                                                                </AvatarFallback>
-                                                                            </Avatar>
-                                                                            <div>
-                                                                                <h4 className="font-medium">{classItem.subject.name}</h4>
-                                                                                <p className="text-muted-foreground text-sm">
-                                                                                    {classItem.subject.code}
-                                                                                </p>
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-
-                                                                    <div className="flex flex-shrink-0 items-center gap-4">
-                                                                        <div className="flex items-center gap-1 text-sm">
-                                                                            <Home className="text-muted-foreground h-4 w-4" />
-                                                                            {classItem.room.name}
-                                                                        </div>
-                                                                        <Badge
-                                                                            variant={classItem.status === 'Active' ? 'default' : 'secondary'}
-                                                                            className="ml-2"
-                                                                        >
-                                                                            {classItem.status}
-                                                                        </Badge>
-                                                                        <Button variant="ghost" size="icon">
-                                                                            <ChevronRight className="h-5 w-5" />
-                                                                        </Button>
+                                            {dayClasses.length > 0 ? (
+                                                <div className="divide-y">
+                                                    {dayClasses.map((classItem) => (
+                                                        <div
+                                                            key={classItem.id}
+                                                            onClick={() => handleClassClick(classItem.id)}
+                                                            className="hover:bg-muted/30 hover:border-l-primary cursor-pointer border-l-2 border-transparent p-5 transition-colors"
+                                                        >
+                                                            <div className="flex flex-col gap-4 md:flex-row md:items-center">
+                                                                <div className="w-32 flex-shrink-0">
+                                                                    <div className="text-sm font-medium">
+                                                                        {formatTime(classItem.start_time)} - {formatTime(classItem.end_time)}
                                                                     </div>
                                                                 </div>
+
+                                                                <div className="flex-grow">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <Avatar className="h-8 w-8">
+                                                                            <AvatarFallback className={getSubjectColor(classItem.subject.id)}>
+                                                                                {getInitials(classItem.subject.name)}
+                                                                            </AvatarFallback>
+                                                                        </Avatar>
+                                                                        <div>
+                                                                            <h4 className="font-medium">{classItem.subject.name}</h4>
+                                                                            <p className="text-muted-foreground text-sm">{classItem.subject.code}</p>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+
+                                                                <div className="flex flex-shrink-0 items-center gap-4">
+                                                                    <div className="flex items-center gap-1 text-sm">
+                                                                        <Home className="text-muted-foreground h-4 w-4" />
+                                                                        {classItem.room.name}
+                                                                    </div>
+                                                                    <Badge
+                                                                        variant={classItem.status === 'Active' ? 'default' : 'secondary'}
+                                                                        className="ml-2"
+                                                                    >
+                                                                        {classItem.status}
+                                                                    </Badge>
+                                                                    <Button variant="ghost" size="icon">
+                                                                        <ChevronRight className="h-5 w-5" />
+                                                                    </Button>
+                                                                </div>
                                                             </div>
-                                                        ))}
-                                                    </div>
-                                                ) : (
-                                                    <div className="text-muted-foreground p-6 text-center">No classes scheduled for {day}</div>
-                                                )}
-                                            </div>
-                                        ))}
-                                    </ScrollArea>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <div className="text-muted-foreground p-6 text-center">No classes scheduled for {day}</div>
+                                            )}
+                                        </div>
+                                    ))}
                                 </CardContent>
                             </Card>
                         </TabsContent>
