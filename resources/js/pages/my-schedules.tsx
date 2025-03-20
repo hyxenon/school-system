@@ -43,10 +43,20 @@ const COLOR_PALETTE = [
     { bg: 'bg-cyan-100', border: 'border-cyan-400', text: 'text-cyan-800', light: 'bg-cyan-50', name: 'Cyan' },
 ];
 
+// Add new interface for academic year and semester options
+interface AcademicFilter {
+    academic_year: string;
+    semester: string;
+}
+
 function MySchedulesPage({ schedules, type }: MySchedulesPageProps) {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedDay, setSelectedDay] = useState<string | 'all'>('all');
     const [currentDate, setCurrentDate] = useState(new Date());
+    const [filters, setFilters] = useState<AcademicFilter>({
+        academic_year: schedules[0]?.academic_year || '', // Default to first schedule's year
+        semester: schedules[0]?.semester.toString() || '', // Default to first schedule's semester
+    });
 
     // Get unique subjects for filtering
     const uniqueSubjects = useMemo(() => {
@@ -71,7 +81,18 @@ function MySchedulesPage({ schedules, type }: MySchedulesPageProps) {
         return colorMap;
     }, [schedules]);
 
-    // Filter schedules based on search and day filter
+    // Get unique academic years and semesters
+    const academicYears = useMemo(() => {
+        const years = new Set<string>();
+        schedules.forEach((schedule) => {
+            years.add(schedule.academic_year);
+        });
+        return Array.from(years).sort().reverse();
+    }, [schedules]);
+
+    const semesters = ['1', '2', '3'];
+
+    // Filter schedules based on search and filters
     const filteredSchedules = useMemo(() => {
         return schedules.filter((schedule) => {
             const matchesSearch =
@@ -83,9 +104,12 @@ function MySchedulesPage({ schedules, type }: MySchedulesPageProps) {
 
             const matchesDay = selectedDay === 'all' || schedule.day === selectedDay;
 
-            return matchesSearch && matchesDay;
+            const matchesAcademicYear = schedule.academic_year === filters.academic_year;
+            const matchesSemester = schedule.semester.toString() === filters.semester;
+
+            return matchesSearch && matchesDay && matchesAcademicYear && matchesSemester;
         });
-    }, [schedules, searchTerm, selectedDay]);
+    }, [schedules, searchTerm, selectedDay, filters]);
 
     // Group schedules by day
     const schedulesByDay: Record<string, Schedule[]> = useMemo(() => {
@@ -205,6 +229,32 @@ function MySchedulesPage({ schedules, type }: MySchedulesPageProps) {
                     </div>
 
                     <div className="flex items-center gap-2">
+                        <Select value={filters.academic_year} onValueChange={(value) => setFilters((prev) => ({ ...prev, academic_year: value }))}>
+                            <SelectTrigger className="w-[180px]">
+                                <SelectValue placeholder="Academic Year" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {academicYears.map((year) => (
+                                    <SelectItem key={year} value={year}>
+                                        {year}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+
+                        <Select value={filters.semester} onValueChange={(value) => setFilters((prev) => ({ ...prev, semester: value }))}>
+                            <SelectTrigger className="w-[180px]">
+                                <SelectValue placeholder="Semester" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {semesters.map((sem) => (
+                                    <SelectItem key={sem} value={sem}>
+                                        {`${sem}${sem === '1' ? 'st' : sem === '2' ? 'nd' : 'rd'} Semester`}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+
                         <Filter className="text-muted-foreground h-4 w-4" />
                         <Select value={selectedDay} onValueChange={(value) => setSelectedDay(value)}>
                             <SelectTrigger className="w-[180px]">
