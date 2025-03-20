@@ -77,6 +77,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         }
         return redirect()->route('dashboard')->with('error', 'Unauthorized access');
     });
+
+    Route::get('/classes/{id}', [ScheduleController::class, 'show'])->name('classes.show');
 });
 
 

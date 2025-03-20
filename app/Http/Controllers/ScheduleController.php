@@ -257,23 +257,28 @@ class ScheduleController extends Controller
         ]);
     }
 
-    public function getTeacherClasses()
+    public function getTeacherClasses(Request $request)
     {
         $teacherId = auth()->user()->employee->id;
 
         $classes = Schedule::with(['subject', 'room.building', 'course'])
             ->where('professor_id', $teacherId)
             ->where('status', 'Active')
+            ->when($request->academic_year, function ($query) use ($request) {
+                return $query->where('academic_year', $request->academic_year);
+            })
+            ->when($request->semester, function ($query) use ($request) {
+                return $query->where('semester', $request->semester);
+            })
             ->orderBy('day')
             ->orderBy('start_time')
             ->get()
             ->groupBy(['academic_year', 'semester']);
 
-        return  $this->renderClasses($classes, 'teacher');
+        return $this->renderClasses($classes, 'teacher');
     }
 
-
-    public function getStudentClasses()
+    public function getStudentClasses(Request $request)
     {
         $student = auth()->user()->student;
 
@@ -282,6 +287,12 @@ class ScheduleController extends Controller
             ->where('year_level', $student->year_level)
             ->where('block', $student->block)
             ->where('status', 'Active')
+            ->when($request->academic_year, function ($query) use ($request) {
+                return $query->where('academic_year', $request->academic_year);
+            })
+            ->when($request->semester, function ($query) use ($request) {
+                return $query->where('semester', $request->semester);
+            })
             ->orderBy('day')
             ->orderBy('start_time')
             ->get()
@@ -290,12 +301,21 @@ class ScheduleController extends Controller
         return $this->renderClasses($classes, 'student');
     }
 
-
     private function renderClasses($schedules, $type)
     {
         return Inertia::render('my-classes', [
             'classes' => $schedules,
             'type' => $type
+        ]);
+    }
+
+    public function show($id)
+    {
+        $schedule = Schedule::with(['subject', 'room.building', 'course'])
+            ->findOrFail($id);
+
+        return Inertia::render('class-details', [
+            'class' => $schedule
         ]);
     }
 }

@@ -1,7 +1,7 @@
 'use client';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
-import { Head } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import { BookMarked, BookOpen, Calendar, CalendarDays, ChevronRight, Clock, Grid3X3, Home, List, Search, Users } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
@@ -86,8 +86,7 @@ function MyClassesPage({ classes, type }: MyClassesPageProps) {
 
     // Handle class selection
     const handleClassClick = (classId: number) => {
-        // This will be handled by the user for redirection
-        console.log(`Clicked on class with ID: ${classId}`);
+        router.get(`/classes/${classId}`);
     };
 
     // Group classes by day for calendar view
@@ -169,7 +168,7 @@ function MyClassesPage({ classes, type }: MyClassesPageProps) {
                 {/* Summary Cards */}
                 {filteredClasses.length > 0 && (
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                        <Card className="border-l-primary overflow-hidden border-l-4">
+                        <Card className="border-t-primary overflow-hidden border-t-4">
                             <CardContent className="px-6">
                                 <div className="flex items-center justify-between">
                                     <div>
@@ -183,7 +182,7 @@ function MyClassesPage({ classes, type }: MyClassesPageProps) {
                             </CardContent>
                         </Card>
 
-                        <Card className="border-l-primary overflow-hidden border-l-4">
+                        <Card className="border-t-primary overflow-hidden border-t-4">
                             <CardContent className="px-6">
                                 <div className="flex items-center justify-between">
                                     <div>
@@ -197,7 +196,7 @@ function MyClassesPage({ classes, type }: MyClassesPageProps) {
                             </CardContent>
                         </Card>
 
-                        <Card className="border-l-primary overflow-hidden border-l-4">
+                        <Card className="border-t-primary overflow-hidden border-t-4">
                             <CardContent className="px-6">
                                 <div className="flex items-center justify-between">
                                     <div>
