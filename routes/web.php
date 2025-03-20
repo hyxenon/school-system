@@ -23,11 +23,8 @@ Route::get('/', function () {
 })->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('dashboard', function () {
-        return Inertia::render('dashboard');
-    })->name('dashboard');
 
-
+    Route::get('/dashboard', [AnnouncementController::class, 'getAnnouncements'])->name('get-announcements');
     // Registrar 
 
     Route::resource('employees', EmployeeController::class);
@@ -47,7 +44,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('announcements', AnnouncementController::class);
     Route::put('announcements/{announcement}/pin', [AnnouncementController::class, 'togglePin'])->name('announcements.pin');
 
-
     // Program Head
     Route::resource('add-students', StudentController::class);
 
@@ -56,6 +52,20 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Treasury
     Route::get('/payments', [PaymentController::class, 'index'])->name('payments.index');
     Route::post('/payments', [PaymentController::class, 'store'])->name('payments.store');
+
+
+
+    // Schedule Routes
+    Route::get('/my-schedules', function () {
+        $user = auth()->user();
+        if ($user->employee) {
+            return app(ScheduleController::class)->getTeacherSchedule(request());
+        }
+        if ($user->student) {
+            return app(ScheduleController::class)->getStudentSchedule(request());
+        }
+        return redirect()->route('dashboard')->with('error', 'Unauthorized access');
+    })->name('my-schedules');
 });
 
 

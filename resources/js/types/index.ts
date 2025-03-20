@@ -193,6 +193,7 @@ export interface Schedule {
     id: number;
     subject: Subject;
     room: Room;
+    course: Course;
     professor: Employee;
     students: Student[];
     year_level: number;

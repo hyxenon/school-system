@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import type { Building, Employee, Room, Subject } from '@/types';
+import type { Building, Course, Employee, Room, Schedule, Subject } from '@/types';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from '@inertiajs/react';
 import { Plus, Search, X } from 'lucide-react';
@@ -22,10 +22,26 @@ declare global {
 
 const scheduleSchema = z
     .object({
-        subject_id: z.coerce.number().min(1, 'Subject is required'),
-        professor_id: z.coerce.number().min(1, 'Professor is required'),
-        building_id: z.coerce.number().min(1, 'Building is required'),
-        room_id: z.coerce.number().min(1, 'Room is required'),
+        subject_id: z.coerce
+            .number()
+            .optional()
+            .refine((val) => val !== undefined && val > 0, { message: 'Please select a subject' }),
+        professor_id: z.coerce
+            .number()
+            .optional()
+            .refine((val) => val !== undefined && val > 0, { message: 'Please select a professor' }),
+        building_id: z.coerce
+            .number()
+            .optional()
+            .refine((val) => val !== undefined && val > 0, { message: 'Please select a building' }),
+        room_id: z.coerce
+            .number()
+            .optional()
+            .refine((val) => val !== undefined && val > 0, { message: 'Please select a room' }),
+        course_id: z.coerce
+            .number()
+            .optional()
+            .refine((val) => val !== undefined && val > 0, { message: 'Please select a course' }),
         day: z.enum(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']),
         start_time: z.string().min(1, 'Start time is required'),
         end_time: z.string().min(1, 'End time is required'),
@@ -47,34 +63,66 @@ interface ScheduleCreateModalProps {
     professors?: Employee[];
     rooms?: Room[];
     buildings?: Building[];
+    courses?: Course[];
+    schedule?: Schedule; // Add optional schedule prop
+    isEdit?: boolean; // Add flag to determine if we're editing
 }
 
-export function ScheduleCreateModal({ subjects = [], professors = [], rooms = [], buildings = [] }: ScheduleCreateModalProps) {
+export function ScheduleCreateModal({
+    subjects = [],
+    professors = [],
+    rooms = [],
+    buildings = [],
+    courses = [],
+    schedule,
+    isEdit = false,
+}: ScheduleCreateModalProps) {
     const [open, setOpen] = useState(false);
     const [subjectSearch, setSubjectSearch] = useState('');
     const [professorSearch, setProfessorSearch] = useState('');
     const [buildingSearch, setBuildingSearch] = useState('');
     const [roomSearch, setRoomSearch] = useState('');
+    const [courseSearch, setCourseSearch] = useState('');
     const inertiaForm = useForm();
 
+    // Modify form field for start_time and end_time to properly format default values
     const form = useHookForm<z.infer<typeof scheduleSchema>>({
         resolver: zodResolver(scheduleSchema),
-        defaultValues: {
-            subject_id: undefined,
-            professor_id: undefined,
-            building_id: undefined,
-            room_id: undefined,
-            day: 'Monday',
-            start_time: '',
-            end_time: '',
-            year_level: 1,
-            block: '',
-            academic_year: new Date().getFullYear().toString(),
-            semester: 1,
-            schedule_type: 'Lecture',
-            max_students: 30,
-            status: 'Active',
-        },
+        defaultValues: schedule
+            ? {
+                  subject_id: schedule.subject_id,
+                  professor_id: schedule.professor_id,
+                  building_id: schedule.room.building_id,
+                  room_id: schedule.room_id,
+                  course_id: schedule.course_id,
+                  day: schedule.day as any,
+                  start_time: schedule.start_time.split(':').slice(0, 2).join(':'), // Convert HH:mm:ss to HH:mm
+                  end_time: schedule.end_time.split(':').slice(0, 2).join(':'),
+                  year_level: schedule.year_level,
+                  block: schedule.block,
+                  academic_year: schedule.academic_year,
+                  semester: schedule.semester,
+                  schedule_type: schedule.schedule_type as any,
+                  max_students: schedule.max_students,
+                  status: schedule.status as any,
+              }
+            : {
+                  subject_id: undefined,
+                  professor_id: undefined,
+                  building_id: undefined,
+                  room_id: undefined,
+                  day: 'Monday',
+                  start_time: '',
+                  end_time: '',
+                  year_level: 1,
+                  block: '',
+                  academic_year: new Date().getFullYear().toString(),
+                  semester: 1,
+                  schedule_type: 'Lecture',
+                  max_students: 30,
+                  status: 'Active',
+                  course_id: undefined,
+              },
     });
 
     // Filtered search functions
@@ -103,59 +151,180 @@ export function ScheduleCreateModal({ subjects = [], professors = [], rooms = []
         );
     }, [rooms, roomSearch, form.watch]);
 
+    // Filter courses
+    const filteredCourses = useMemo(() => {
+        return courses.filter(
+            (course) =>
+                course.name.toLowerCase().includes(courseSearch.toLowerCase()) ||
+                course.course_code.toLowerCase().includes(courseSearch.toLowerCase()),
+        );
+    }, [courses, courseSearch]);
+
     const onSubmit = (values: z.infer<typeof scheduleSchema>) => {
-        // Create a new object without building_id
         const { building_id, ...scheduleData } = values;
 
-        // Log the data being sent
-        console.log('Form data being submitted:', scheduleData);
+        // Ensure times are in HH:mm format
+        const formatTimeToHHmm = (time: string) => {
+            const [hours, minutes] = time.split(':');
+            return `${hours.padStart(2, '0')}:${minutes.padStart(2, '0')}`;
+        };
 
-        // Use Inertia's form submission correctly
+        const formattedData = {
+            ...scheduleData,
+            start_time: formatTimeToHHmm(values.start_time),
+            end_time: formatTimeToHHmm(values.end_time),
+        };
+
         inertiaForm.clearErrors();
         inertiaForm.transform((data) => ({
             ...data,
-            ...scheduleData,
+            ...formattedData,
         }));
 
-        inertiaForm.post(window.route('schedules.store'), {
-            preserveScroll: true,
-            onSuccess: () => {
-                console.log('Form submitted successfully');
-                toast.success('Schedule created successfully');
-                setOpen(false);
-                form.reset();
-            },
-            onError: (errors) => {
-                console.error('Form submission errors:', errors);
+        if (isEdit && schedule) {
+            inertiaForm.put(window.route('schedules.update', schedule.id), {
+                preserveScroll: true,
+                onSuccess: () => {
+                    toast.success('Schedule updated successfully');
+                    setOpen(false);
+                    form.reset();
+                },
+                onError: (errors) => {
+                    const formattedErrors = Object.entries(errors).map(([key, value]) => {
+                        if (value === 'Expected number, received nan') {
+                            switch (key) {
+                                case 'subject_id':
+                                    return 'Please select a subject';
+                                case 'professor_id':
+                                    return 'Please select a professor';
+                                case 'building_id':
+                                    return 'Please select a building';
+                                case 'room_id':
+                                    return 'Please select a room';
+                                case 'course_id':
+                                    return 'Please select a course';
+                                default:
+                                    return value;
+                            }
+                        }
+                        return value;
+                    });
 
-                if (errors.conflict) {
-                    toast.error(errors.conflict);
-                } else {
-                    // Show all validation errors
-                    const errorMessages = Object.values(errors).join(', ');
-                    toast.error(`Failed to create schedule: ${errorMessages}`);
-                }
-            },
-        });
+                    toast.error(`Failed to ${isEdit ? 'update' : 'create'} schedule: ${formattedErrors.join(', ')}`);
+                },
+            });
+        } else {
+            inertiaForm.post(window.route('schedules.store'), {
+                preserveScroll: true,
+                onSuccess: () => {
+                    toast.success('Schedule created successfully');
+                    setOpen(false);
+                    form.reset();
+                },
+                onError: (errors) => {
+                    const formattedErrors = Object.entries(errors).map(([key, value]) => {
+                        if (value === 'Expected number, received nan') {
+                            switch (key) {
+                                case 'subject_id':
+                                    return 'Please select a subject';
+                                case 'professor_id':
+                                    return 'Please select a professor';
+                                case 'building_id':
+                                    return 'Please select a building';
+                                case 'room_id':
+                                    return 'Please select a room';
+                                case 'course_id':
+                                    return 'Please select a course';
+                                default:
+                                    return value;
+                            }
+                        }
+                        return value;
+                    });
+
+                    toast.error(`Failed to create schedule: ${formattedErrors.join(', ')}`);
+                },
+            });
+        }
     };
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button>
-                    <Plus className="mr-2 h-4 w-4" /> Create Schedule
+                <Button variant={isEdit ? 'outline' : 'default'} size={isEdit ? 'sm' : 'default'}>
+                    {isEdit ? (
+                        'Edit'
+                    ) : (
+                        <>
+                            <Plus className="mr-2 h-4 w-4" /> Create Schedule
+                        </>
+                    )}
                 </Button>
             </DialogTrigger>
 
-            <DialogContent className="sm:max-w-[625px]">
+            <DialogContent className={'max-h-screen overflow-y-scroll sm:max-w-[625px]'}>
                 <DialogHeader>
-                    <DialogTitle>Create New Schedule</DialogTitle>
-                    <DialogDescription>Fill out the details for the new schedule</DialogDescription>
+                    <DialogTitle>{isEdit ? 'Edit Schedule' : 'Create New Schedule'}</DialogTitle>
+                    <DialogDescription>{isEdit ? 'Modify the schedule details' : 'Fill out the details for the new schedule'}</DialogDescription>
                 </DialogHeader>
 
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
+                            {/* Course Selection */}
+                            <FormField
+                                control={form.control}
+                                name="course_id"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Course</FormLabel>
+                                        <Select
+                                            onValueChange={(value) => {
+                                                field.onChange(Number(value));
+                                                setCourseSearch('');
+                                            }}
+                                            value={field.value?.toString()}
+                                        >
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select a course" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent onKeyDown={(e) => e.stopPropagation()}>
+                                                <div className="p-2">
+                                                    <div className="relative">
+                                                        <Search className="text-muted-foreground absolute top-1/2 left-2 h-4 w-4 -translate-y-1/2" />
+                                                        <Input
+                                                            placeholder="Search courses..."
+                                                            value={courseSearch}
+                                                            onChange={(e) => setCourseSearch(e.target.value)}
+                                                            className="mb-2 pl-8"
+                                                            onKeyDown={(e) => e.stopPropagation()}
+                                                        />
+                                                        {courseSearch && (
+                                                            <X
+                                                                className="text-muted-foreground absolute top-1/2 right-2 h-4 w-4 -translate-y-1/2 cursor-pointer"
+                                                                onClick={() => setCourseSearch('')}
+                                                            />
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                {filteredCourses.length > 0 ? (
+                                                    filteredCourses.map((course) => (
+                                                        <SelectItem key={course.id} value={course.id.toString()}>
+                                                            {course.course_code} - {course.name}
+                                                        </SelectItem>
+                                                    ))
+                                                ) : (
+                                                    <div className="text-muted-foreground p-2 text-center">No courses found</div>
+                                                )}
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
                             {/* Subject Selection */}
                             <FormField
                                 control={form.control}
@@ -175,7 +344,7 @@ export function ScheduleCreateModal({ subjects = [], professors = [], rooms = []
                                                     <SelectValue placeholder="Select a subject" />
                                                 </SelectTrigger>
                                             </FormControl>
-                                            <SelectContent>
+                                            <SelectContent onKeyDown={(e) => e.stopPropagation()}>
                                                 <div className="p-2">
                                                     <div className="relative">
                                                         <Search className="text-muted-foreground absolute top-1/2 left-2 h-4 w-4 -translate-y-1/2" />
@@ -184,6 +353,7 @@ export function ScheduleCreateModal({ subjects = [], professors = [], rooms = []
                                                             value={subjectSearch}
                                                             onChange={(e) => setSubjectSearch(e.target.value)}
                                                             className="mb-2 pl-8"
+                                                            onKeyDown={(e) => e.stopPropagation()}
                                                         />
                                                         {subjectSearch && (
                                                             <X
@@ -414,7 +584,15 @@ export function ScheduleCreateModal({ subjects = [], professors = [], rooms = []
                                     <FormItem>
                                         <FormLabel>Start Time</FormLabel>
                                         <FormControl>
-                                            <Input type="time" {...field} />
+                                            <Input
+                                                type="time"
+                                                {...field}
+                                                step="60"
+                                                onChange={(e) => {
+                                                    const time = e.target.value;
+                                                    field.onChange(time);
+                                                }}
+                                            />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -429,7 +607,15 @@ export function ScheduleCreateModal({ subjects = [], professors = [], rooms = []
                                     <FormItem>
                                         <FormLabel>End Time</FormLabel>
                                         <FormControl>
-                                            <Input type="time" {...field} />
+                                            <Input
+                                                type="time"
+                                                {...field}
+                                                step="60"
+                                                onChange={(e) => {
+                                                    const time = e.target.value;
+                                                    field.onChange(time);
+                                                }}
+                                            />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -580,13 +766,12 @@ export function ScheduleCreateModal({ subjects = [], professors = [], rooms = []
                                 )}
                             />
                         </div>
-
                         <div className="flex justify-end space-x-2 pt-4">
                             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
                                 Cancel
                             </Button>
                             <Button type="submit" disabled={inertiaForm.processing}>
-                                Create Schedule
+                                {isEdit ? 'Update Schedule' : 'Create Schedule'}
                             </Button>
                         </div>
                     </form>

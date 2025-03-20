@@ -28,11 +28,11 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
-import type { BreadcrumbItem, Building, Employee, Room, Schedule, Subject } from '@/types';
-import { Head, router, usePage } from '@inertiajs/react';
+import type { BreadcrumbItem, Building, Course, Employee, Room, Schedule, Subject } from '@/types';
+import { Head, router } from '@inertiajs/react';
 import { Clock, Search, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { Toaster } from 'sonner';
+import { toast, Toaster } from 'sonner';
 
 interface SchedulesIndexProps {
     schedules: Schedule[];
@@ -40,6 +40,7 @@ interface SchedulesIndexProps {
     professors: Employee[];
     rooms: Room[];
     buildings: Building[];
+    courses: Course[];
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -49,7 +50,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function SchedulesIndex({ schedules, subjects, professors, rooms, buildings }: SchedulesIndexProps) {
+export default function SchedulesIndex({ schedules, subjects, professors, rooms, buildings, courses }: SchedulesIndexProps) {
     const [deleteId, setDeleteId] = useState<number | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [subjectFilter, setSubjectFilter] = useState<string>('');
@@ -57,8 +58,6 @@ export default function SchedulesIndex({ schedules, subjects, professors, rooms,
     const [dayFilter, setDayFilter] = useState<string>('');
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
-
-    const { route } = usePage().props;
 
     // Filter schedules based on search term and filters
     const filteredSchedules = useMemo(() => {
@@ -87,7 +86,10 @@ export default function SchedulesIndex({ schedules, subjects, professors, rooms,
     const handleDelete = () => {
         if (deleteId) {
             router.delete(route('schedules.destroy', deleteId), {
-                onSuccess: () => setDeleteId(null),
+                onSuccess: () => {
+                    setDeleteId(null);
+                    toast.success('Schedule deleted successfully.');
+                },
             });
         }
     };
@@ -121,7 +123,7 @@ export default function SchedulesIndex({ schedules, subjects, professors, rooms,
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
                 <div className="flex items-center justify-between">
                     <h1 className="text-2xl font-bold">Schedules</h1>
-                    <ScheduleCreateModal subjects={subjects} professors={professors} rooms={rooms} buildings={buildings} />
+                    <ScheduleCreateModal subjects={subjects} professors={professors} rooms={rooms} buildings={buildings} courses={courses} />
                 </div>
 
                 {/* Filters */}
@@ -291,9 +293,15 @@ export default function SchedulesIndex({ schedules, subjects, professors, rooms,
                                         </TableCell>
                                         <TableCell>
                                             <div className="flex items-center gap-2">
-                                                <Button variant="outline" size="sm" onClick={() => router.get(route('schedules.edit', schedule.id))}>
-                                                    Edit
-                                                </Button>
+                                                <ScheduleCreateModal
+                                                    subjects={subjects}
+                                                    professors={professors}
+                                                    rooms={rooms}
+                                                    buildings={buildings}
+                                                    courses={courses}
+                                                    schedule={schedule}
+                                                    isEdit={true}
+                                                />
                                                 <Button variant="destructive" size="sm" onClick={() => setDeleteId(schedule.id)}>
                                                     Delete
                                                 </Button>
@@ -390,9 +398,20 @@ export default function SchedulesIndex({ schedules, subjects, professors, rooms,
 }
 
 function formatTime(time: string): string {
+    // Handle empty or invalid time
+    if (!time) return '';
+
     const [hours, minutes] = time.split(':');
     const hourNum = parseInt(hours, 10);
+
+    // Ensure valid hour number
+    if (isNaN(hourNum)) return time;
+
     const period = hourNum >= 12 ? 'PM' : 'AM';
     const formattedHours = hourNum % 12 || 12;
-    return `${formattedHours}:${minutes} ${period}`;
+
+    // Format minutes properly
+    const formattedMinutes = minutes ? minutes.slice(0, 2) : '00';
+
+    return `${formattedHours}:${formattedMinutes} ${period}`;
 }

@@ -51,11 +51,7 @@ const roleBasedNavItems: Record<string, NavItem[]> = {
             url: '/curriculum',
             icon: CurlyBracesIcon,
         },
-        {
-            title: 'Schedules',
-            url: '/schedules',
-            icon: CalendarIcon,
-        },
+
         {
             title: 'Announcements',
             url: '/announcements',
@@ -64,16 +60,16 @@ const roleBasedNavItems: Record<string, NavItem[]> = {
     ],
     professor: [
         {
-            title: 'My Classes',
-            url: 'classes',
-            icon: BriefcaseBusiness, // Change to appropriate icon
+            title: 'My Schedules',
+            url: '/my-schedules',
+            icon: CalendarIcon, // Change to appropriate icon
         },
     ],
     student: [
         {
-            title: 'My Courses',
-            url: 'courses',
-            icon: BriefcaseBusiness, // Change to appropriate icon
+            title: 'My Schedules',
+            url: '/my-schedules',
+            icon: CalendarIcon, // Change to appropriate icon
         },
     ],
     'program head': [
@@ -81,6 +77,11 @@ const roleBasedNavItems: Record<string, NavItem[]> = {
             title: 'Add Student',
             url: '/add-students',
             icon: BriefcaseBusiness, // Change to appropriate icon
+        },
+        {
+            title: 'Schedules',
+            url: '/schedules',
+            icon: CalendarIcon,
         },
     ],
     treasurer: [
@@ -115,7 +116,7 @@ const footerNavItems: NavItem[] = [
 
 export function AppSidebar() {
     const { auth } = usePage<SharedData>().props;
-    const userRole = auth.user.employee ? auth.user.employee.position : '';
+    const userRole = auth.user.employee ? auth.user.employee.position : auth.user.student ? 'student' : '';
     const roleNavItems = roleBasedNavItems[userRole] || [];
 
     const navItems = [...mainNavItems, ...roleNavItems];

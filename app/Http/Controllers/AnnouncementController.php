@@ -91,4 +91,19 @@ class AnnouncementController extends Controller
 
         return redirect()->back()->with('success', 'Announcement pin status updated successfully.');
     }
+
+
+
+    public function getAnnouncements(Request $request)
+    {
+        $announcements = Announcement::with('department')->latest();
+
+        if ($request->has('department_id')) {
+            $announcements->where('department_id', $request->department_id);
+        }
+
+        return Inertia::render('dashboard', [
+            'announcements' => $announcements->get(),
+        ]);
+    }
 }
