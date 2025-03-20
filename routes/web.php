@@ -24,7 +24,7 @@ Route::get('/', function () {
 
 Route::middleware(['auth', 'verified'])->group(function () {
 
-    Route::get('/dashboard', [AnnouncementController::class, 'getAnnouncements'])->name('get-announcements');
+    Route::get('/dashboard', [AnnouncementController::class, 'getAnnouncements'])->name('dashboard');
     // Registrar 
 
     Route::resource('employees', EmployeeController::class);
