@@ -83,8 +83,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/assignments', [AssignmentController::class, 'store'])->name('assignments.store');
 });
 
-
-
+// Assignment routes
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::post('/assignments', [AssignmentController::class, 'store'])->name('assignments.store');
+    Route::put('/assignments/{assignment}', [AssignmentController::class, 'update'])->name('assignments.update');
+    Route::delete('/assignments/{assignment}', [AssignmentController::class, 'destroy'])->name('assignments.destroy');
+});
 
 require __DIR__ . '/settings.php';
 require __DIR__ . '/auth.php';

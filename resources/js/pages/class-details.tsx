@@ -7,12 +7,13 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 import { Head, useForm } from '@inertiajs/react';
 import { Calendar, Clock, Home, Pencil, Plus, Users } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 interface ClassDetailsPageProps {
@@ -49,8 +50,10 @@ interface ClassDetailsPageProps {
 }
 
 function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsPageProps) {
-    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-    const { data, setData, post, processing, errors } = useForm({
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingAssignment, setEditingAssignment] = useState<null | any>(null);
+
+    const { data, setData, post, put, processing, errors, reset } = useForm({
         title: '',
         description: '',
         due_date: '',
@@ -62,6 +65,17 @@ function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsPagePro
         year_level: classDetails.year_level,
         block: classDetails.block,
     });
+
+    const [activeTab, setActiveTab] = useState('assignments');
+
+    useEffect(() => {
+        const assessmentTypes = {
+            assignments: 'Assignment',
+            quizzes: 'Quiz',
+            exams: 'Exam',
+        };
+        setData('assessment_type', assessmentTypes[activeTab]);
+    }, [activeTab]);
 
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'My Classes', href: '/my-classes' },
@@ -77,17 +91,62 @@ function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsPagePro
     };
 
     const handleSubmit = () => {
-        post('/assignments', {
-            preserveScroll: true,
-            onSuccess: () => {
-                setIsAddModalOpen(false);
-                reset();
-                toast.success('Assessment created successfully');
-            },
-            onError: (errors) => {
-                toast.error('Please check the form for errors');
-            },
+        if (editingAssignment) {
+            put(`/assignments/${editingAssignment.id}`, {
+                preserveScroll: true,
+                onSuccess: () => {
+                    setIsModalOpen(false);
+                    setEditingAssignment(null);
+                    reset();
+                    toast.success('Assessment updated successfully');
+                },
+                onError: (errors) => {
+                    toast.error(Object.values(errors)[0] as string);
+                },
+            });
+        } else {
+            post('/assignments', {
+                preserveScroll: true,
+                onSuccess: () => {
+                    setIsModalOpen(false);
+                    reset();
+                    toast.success('Assessment created successfully');
+                },
+                onError: (errors) => {
+                    toast.error(Object.values(errors)[0] as string);
+                },
+            });
+        }
+    };
+
+    const filterAssignmentsByType = (type: string) => {
+        return classDetails.subject.assignments?.filter((assignment) => assignment.assessment_type === type) || [];
+    };
+
+    const getAddButtonText = (type: string) => {
+        return `Add ${type}`;
+    };
+
+    const handleEdit = (assignment) => {
+        setEditingAssignment(assignment);
+
+        // Format the date to YYYY-MM-DD for the input field
+        const formattedDate = new Date(assignment.due_date).toISOString().split('T')[0];
+
+        setData({
+            ...data,
+            title: assignment.title,
+            description: assignment.description,
+            due_date: formattedDate, // Use formatted date
+            assessment_type: assignment.assessment_type,
+            period: assignment.period,
+            total_points: assignment.total_points,
         });
+        setIsModalOpen(true);
+    };
+
+    const handlePencilClick = (assignment) => {
+        handleEdit(assignment);
     };
 
     return (
@@ -148,58 +207,143 @@ function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsPagePro
                     </CardContent>
                 </Card>
 
-                {/* Assignments Section */}
+                {/* Assessments Section */}
                 <Card>
                     <CardHeader>
-                        <div className="flex items-center justify-between">
-                            <CardTitle>Assignments</CardTitle>
-                            {userRole === 'teacher' && (
-                                <Button onClick={() => setIsAddModalOpen(true)}>
-                                    <Plus className="mr-2 h-4 w-4" />
-                                    Add Assignment
-                                </Button>
-                            )}
-                        </div>
+                        <CardTitle>Assessments</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="divide-y">
-                            {classDetails.subject.assignments?.length > 0 ? (
-                                classDetails.subject.assignments.map((assignment) => (
-                                    <div key={assignment.id} className="py-4 first:pt-0 last:pb-0">
-                                        <div className="flex items-start justify-between">
-                                            <div>
-                                                <h4 className="font-medium">{assignment.title}</h4>
-                                                <p className="text-muted-foreground mt-1 text-sm">{assignment.description}</p>
-                                                <div className="mt-2 flex items-center gap-4">
-                                                    <Badge variant="outline">{assignment.assessment_type}</Badge>
-                                                    <span className="text-muted-foreground flex items-center text-xs">
-                                                        <Clock className="mr-1 h-3 w-3" />
-                                                        Due: {new Date(assignment.due_date).toLocaleDateString()}
-                                                    </span>
+                        <Tabs defaultValue="assignments" className="w-full" onValueChange={setActiveTab}>
+                            <div className="mb-4 flex items-center justify-between">
+                                <TabsList>
+                                    <TabsTrigger value="assignments">Assignments</TabsTrigger>
+                                    <TabsTrigger value="quizzes">Quizzes</TabsTrigger>
+                                    <TabsTrigger value="exams">Exams</TabsTrigger>
+                                </TabsList>
+                                {userRole === 'teacher' && (
+                                    <Button onClick={() => setIsModalOpen(true)}>
+                                        <Plus className="mr-2 h-4 w-4" />
+                                        {getAddButtonText(data.assessment_type)}
+                                    </Button>
+                                )}
+                            </div>
+
+                            <TabsContent value="assignments">
+                                <div className="divide-y">
+                                    {filterAssignmentsByType('Assignment').length > 0 ? (
+                                        filterAssignmentsByType('Assignment').map((assignment) => (
+                                            <div key={assignment.id} className="py-4 first:pt-0 last:pb-0">
+                                                <div className="flex items-start justify-between">
+                                                    <div>
+                                                        <h4 className="font-medium">{assignment.title}</h4>
+                                                        <p className="text-muted-foreground mt-1 text-sm">{assignment.description}</p>
+                                                        <div className="mt-2 flex items-center gap-4">
+                                                            <Badge variant="outline">{assignment.assessment_type}</Badge>
+                                                            <span className="text-muted-foreground flex items-center text-xs">
+                                                                <Clock className="mr-1 h-3 w-3" />
+                                                                Due: {new Date(assignment.due_date).toLocaleDateString()}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    {userRole === 'teacher' && (
+                                                        <Button variant="ghost" size="icon" onClick={() => handlePencilClick(assignment)}>
+                                                            <Pencil className="h-4 w-4" />
+                                                        </Button>
+                                                    )}
                                                 </div>
                                             </div>
-                                            {userRole === 'teacher' && (
-                                                <Button variant="ghost" size="icon">
-                                                    <Pencil className="h-4 w-4" />
-                                                </Button>
-                                            )}
-                                        </div>
-                                    </div>
-                                ))
-                            ) : (
-                                <p className="text-muted-foreground py-4 text-center">No assignments yet.</p>
-                            )}
-                        </div>
+                                        ))
+                                    ) : (
+                                        <p className="text-muted-foreground py-4 text-center">No assignments yet.</p>
+                                    )}
+                                </div>
+                            </TabsContent>
+
+                            <TabsContent value="quizzes">
+                                <div className="divide-y">
+                                    {filterAssignmentsByType('Quiz').length > 0 ? (
+                                        filterAssignmentsByType('Quiz').map((assignment) => (
+                                            <div key={assignment.id} className="py-4 first:pt-0 last:pb-0">
+                                                <div className="flex items-start justify-between">
+                                                    <div>
+                                                        <h4 className="font-medium">{assignment.title}</h4>
+                                                        <p className="text-muted-foreground mt-1 text-sm">{assignment.description}</p>
+                                                        <div className="mt-2 flex items-center gap-4">
+                                                            <Badge variant="outline">{assignment.assessment_type}</Badge>
+                                                            <span className="text-muted-foreground flex items-center text-xs">
+                                                                <Clock className="mr-1 h-3 w-3" />
+                                                                Due: {new Date(assignment.due_date).toLocaleDateString()}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    {userRole === 'teacher' && (
+                                                        <Button variant="ghost" size="icon" onClick={() => handlePencilClick(assignment)}>
+                                                            <Pencil className="h-4 w-4" />
+                                                        </Button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <p className="text-muted-foreground py-4 text-center">No quizzes yet.</p>
+                                    )}
+                                </div>
+                            </TabsContent>
+
+                            <TabsContent value="exams">
+                                <div className="divide-y">
+                                    {filterAssignmentsByType('Exam').length > 0 ? (
+                                        filterAssignmentsByType('Exam').map((assignment) => (
+                                            <div key={assignment.id} className="py-4 first:pt-0 last:pb-0">
+                                                <div className="flex items-start justify-between">
+                                                    <div>
+                                                        <h4 className="font-medium">{assignment.title}</h4>
+                                                        <p className="text-muted-foreground mt-1 text-sm">{assignment.description}</p>
+                                                        <div className="mt-2 flex items-center gap-4">
+                                                            <Badge variant="outline">{assignment.assessment_type}</Badge>
+                                                            <span className="text-muted-foreground flex items-center text-xs">
+                                                                <Clock className="mr-1 h-3 w-3" />
+                                                                Due: {new Date(assignment.due_date).toLocaleDateString()}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    {userRole === 'teacher' && (
+                                                        <Button variant="ghost" size="icon" onClick={() => handlePencilClick(assignment)}>
+                                                            <Pencil className="h-4 w-4" />
+                                                        </Button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <p className="text-muted-foreground py-4 text-center">No exams yet.</p>
+                                    )}
+                                </div>
+                            </TabsContent>
+                        </Tabs>
                     </CardContent>
                 </Card>
 
-                {/* Add Assignment Modal */}
+                {/* Add/Edit Assignment Modal */}
                 {userRole === 'teacher' && (
-                    <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+                    <Dialog
+                        open={isModalOpen}
+                        onOpenChange={(open) => {
+                            setIsModalOpen(open);
+                            if (!open) {
+                                setEditingAssignment(null);
+                                reset();
+                            }
+                        }}
+                    >
                         <DialogContent>
                             <DialogHeader>
-                                <DialogTitle>Add Assignment</DialogTitle>
-                                <DialogDescription>Create a new assignment for this class.</DialogDescription>
+                                <DialogTitle>
+                                    {editingAssignment ? 'Edit' : 'Add'} {data.assessment_type}
+                                </DialogTitle>
+                                <DialogDescription>
+                                    {editingAssignment ? 'Update' : 'Create a new'} {data.assessment_type.toLowerCase()} for this class.
+                                </DialogDescription>
                             </DialogHeader>
                             <div className="grid gap-4 py-4">
                                 <div className="grid gap-2">
@@ -278,14 +422,13 @@ function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsPagePro
                                     />
                                     {errors.total_points && <p className="text-sm text-red-500">{errors.total_points}</p>}
                                 </div>
-                                {/* ...rest of the form fields remain the same... */}
                             </div>
                             <DialogFooter>
-                                <Button variant="outline" onClick={() => setIsAddModalOpen(false)}>
+                                <Button variant="outline" onClick={() => setIsModalOpen(false)}>
                                     Cancel
                                 </Button>
                                 <Button onClick={handleSubmit} disabled={processing}>
-                                    {processing ? 'Creating...' : 'Create Assignment'}
+                                    {processing ? (editingAssignment ? 'Updating...' : 'Creating...') : editingAssignment ? 'Update' : 'Create'}
                                 </Button>
                             </DialogFooter>
                         </DialogContent>

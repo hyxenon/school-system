@@ -43,10 +43,9 @@ class AssignmentController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'message' => 'Validation failed',
-                'errors' => $validator->errors()
-            ], 422);
+            return back()
+                ->withErrors($validator)
+                ->withInput();
         }
 
         try {
@@ -55,14 +54,14 @@ class AssignmentController extends Controller
 
             Assignment::create($data);
 
-            return response()->json([
-                'message' => 'Assessment created successfully'
-            ]);
+            return redirect()
+                ->back()
+                ->with('success', 'Assessment created successfully');
         } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Failed to create assessment',
-                'error' => $e->getMessage()
-            ], 500);
+            return redirect()
+                ->back()
+                ->withErrors(['error' => 'Failed to create assessment'])
+                ->withInput();
         }
     }
 
@@ -87,7 +86,38 @@ class AssignmentController extends Controller
      */
     public function update(Request $request, Assignment $assignment)
     {
-        //
+        $validator = Validator::make($request->all(), [
+            'title' => 'required|string|max:255',
+            'description' => 'required|string',
+            'due_date' => 'required|date|after_or_equal:today',
+            'assessment_type' => 'required|in:Assignment,Quiz,Exam',
+            'period' => 'required|in:Prelims,Midterms,Finals',
+            'total_points' => 'required|integer|min:1|max:100',
+            'subject_id' => 'required|exists:subjects,id',
+            'schedule_id' => 'required|exists:schedules,id',
+            'year_level' => 'required|integer|min:1|max:4',
+            'block' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return back()
+                ->withErrors($validator)
+                ->withInput();
+        }
+
+        try {
+            $data = $validator->validated();
+            $assignment->update($data);
+
+            return redirect()
+                ->back()
+                ->with('success', 'Assessment updated successfully');
+        } catch (\Exception $e) {
+            return redirect()
+                ->back()
+                ->withErrors(['error' => 'Failed to update assessment'])
+                ->withInput();
+        }
     }
 
     /**
