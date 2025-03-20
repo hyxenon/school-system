@@ -86,7 +86,8 @@ function MyClassesPage({ classes, type }: MyClassesPageProps) {
 
     // Handle class selection
     const handleClassClick = (classId: number) => {
-        router.get(`/classes/${classId}`);
+        // router.get(`/my-classes/${classId}`);
+        router.get(route('classes.show', { id: classId }));
     };
 
     // Group classes by day for calendar view

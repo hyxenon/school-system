@@ -79,7 +79,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return redirect()->route('dashboard')->with('error', 'Unauthorized access');
     });
 
-    Route::get('/classes/{id}', [ScheduleController::class, 'show'])->name('classes.show');
+    Route::get('/my-classes/{id}', [ScheduleController::class, 'show'])->name('classes.show');
     Route::post('/assignments', [AssignmentController::class, 'store'])->name('assignments.store');
 });
 
