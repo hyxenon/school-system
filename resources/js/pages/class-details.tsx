@@ -1,9 +1,20 @@
 'use client';
 
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -11,10 +22,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
-import { Head, useForm } from '@inertiajs/react';
-import { Calendar, Clock, Home, Pencil, Plus, Users } from 'lucide-react';
+import { Head, router, useForm } from '@inertiajs/react';
+import { Calendar, Clock, Home, MoreHorizontal, Pencil, Plus, Trash, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { toast } from 'sonner';
+import { toast, Toaster } from 'sonner';
 
 interface ClassDetailsPageProps {
     class: {
@@ -52,6 +63,8 @@ interface ClassDetailsPageProps {
 function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsPageProps) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingAssignment, setEditingAssignment] = useState<null | any>(null);
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [assignmentToDelete, setAssignmentToDelete] = useState<null | any>(null);
 
     const { data, setData, post, put, processing, errors, reset } = useForm({
         title: '',
@@ -119,6 +132,22 @@ function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsPagePro
         }
     };
 
+    const handleDelete = () => {
+        if (!assignmentToDelete) return;
+
+        router.delete(`/assignments/${assignmentToDelete.id}`, {
+            preserveScroll: true,
+            onSuccess: () => {
+                setIsDeleteDialogOpen(false);
+                setAssignmentToDelete(null);
+                toast.success('Assessment deleted successfully');
+            },
+            onError: () => {
+                toast.error('Failed to delete assessment');
+            },
+        });
+    };
+
     const filterAssignmentsByType = (type: string) => {
         return classDetails.subject.assignments?.filter((assignment) => assignment.assessment_type === type) || [];
     };
@@ -149,9 +178,36 @@ function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsPagePro
         handleEdit(assignment);
     };
 
+    const ActionMenu = ({ assignment }) => (
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon">
+                    <MoreHorizontal className="h-4 w-4" />
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handlePencilClick(assignment)}>
+                    <Pencil className="mr-2 h-4 w-4" />
+                    Edit
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                    className="text-red-600"
+                    onClick={() => {
+                        setAssignmentToDelete(assignment);
+                        setIsDeleteDialogOpen(true);
+                    }}
+                >
+                    <Trash className="mr-2 h-4 w-4" />
+                    Delete
+                </DropdownMenuItem>
+            </DropdownMenuContent>
+        </DropdownMenu>
+    );
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`${classDetails.subject.code}`} />
+            <Toaster />
             <div className="flex flex-col gap-6 p-4">
                 {/* Class Details Card */}
                 <Card>
@@ -245,11 +301,7 @@ function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsPagePro
                                                             </span>
                                                         </div>
                                                     </div>
-                                                    {userRole === 'teacher' && (
-                                                        <Button variant="ghost" size="icon" onClick={() => handlePencilClick(assignment)}>
-                                                            <Pencil className="h-4 w-4" />
-                                                        </Button>
-                                                    )}
+                                                    {userRole === 'teacher' && <ActionMenu assignment={assignment} />}
                                                 </div>
                                             </div>
                                         ))
@@ -276,11 +328,7 @@ function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsPagePro
                                                             </span>
                                                         </div>
                                                     </div>
-                                                    {userRole === 'teacher' && (
-                                                        <Button variant="ghost" size="icon" onClick={() => handlePencilClick(assignment)}>
-                                                            <Pencil className="h-4 w-4" />
-                                                        </Button>
-                                                    )}
+                                                    {userRole === 'teacher' && <ActionMenu assignment={assignment} />}
                                                 </div>
                                             </div>
                                         ))
@@ -307,11 +355,7 @@ function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsPagePro
                                                             </span>
                                                         </div>
                                                     </div>
-                                                    {userRole === 'teacher' && (
-                                                        <Button variant="ghost" size="icon" onClick={() => handlePencilClick(assignment)}>
-                                                            <Pencil className="h-4 w-4" />
-                                                        </Button>
-                                                    )}
+                                                    {userRole === 'teacher' && <ActionMenu assignment={assignment} />}
                                                 </div>
                                             </div>
                                         ))
@@ -434,6 +478,24 @@ function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsPagePro
                         </DialogContent>
                     </Dialog>
                 )}
+
+                {/* Delete Confirmation Dialog */}
+                <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                This will permanently delete this {assignmentToDelete?.assessment_type.toLowerCase()}. This action cannot be undone.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel onClick={() => setAssignmentToDelete(null)}>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+                                Delete
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
             </div>
         </AppLayout>
     );

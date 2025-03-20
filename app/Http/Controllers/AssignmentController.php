@@ -125,6 +125,15 @@ class AssignmentController extends Controller
      */
     public function destroy(Assignment $assignment)
     {
-        //
+        try {
+            $assignment->delete();
+            return redirect()
+                ->back()
+                ->with('success', 'Assessment deleted successfully');
+        } catch (\Exception $e) {
+            return redirect()
+                ->back()
+                ->withErrors(['error' => 'Failed to delete assessment']);
+        }
     }
 }
