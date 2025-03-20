@@ -320,10 +320,25 @@ class ScheduleController extends Controller
             }
         ])->findOrFail($id);
 
-        $userRole = 'student';
-        if (auth()->user()->employee) {
-            $userRole = 'teacher';
-        }
+        // Get students with their user information
+        $students = \App\Models\Student::with('user')
+            ->where('course_id', $schedule->course_id)
+            ->where('year_level', $schedule->year_level)
+            ->where('block', $schedule->block)
+            ->join('users', 'students.user_id', '=', 'users.id')
+            ->orderBy('users.name')
+            ->select('students.*')
+            ->get();
+
+        $schedule->students = $students->map(function ($student) {
+            return [
+                'id' => $student->id,
+                'name' => $student->user->name,
+                'student_number' => $student->student_number
+            ];
+        });
+
+        $userRole = auth()->user()->employee ? 'teacher' : 'student';
 
         return Inertia::render('class-details', [
             'class' => $schedule,

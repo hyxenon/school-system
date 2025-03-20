@@ -56,6 +56,11 @@ interface ClassDetailsPageProps {
         block: string;
         max_students: number;
         schedule_type: string;
+        students: Array<{
+            id: number;
+            name: string;
+            student_number: string;
+        }>;
     };
     userRole: 'teacher' | 'student';
 }
@@ -365,6 +370,34 @@ function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsPagePro
                                 </div>
                             </TabsContent>
                         </Tabs>
+                    </CardContent>
+                </Card>
+
+                {/* Students Section */}
+                <Card>
+                    <CardHeader>
+                        <div className="flex items-center justify-between">
+                            <CardTitle>Students</CardTitle>
+                            <Badge variant="secondary">
+                                {classDetails.students.length} {classDetails.students.length === 1 ? 'Student' : 'Students'}
+                            </Badge>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="divide-y">
+                            {classDetails.students.length > 0 ? (
+                                classDetails.students.map((student) => (
+                                    <div key={student.id} className="flex items-center justify-between py-3">
+                                        <div>
+                                            <p className="font-medium capitalize">{student.name}</p>
+                                            <p className="text-muted-foreground text-sm">{student.student_number}</p>
+                                        </div>
+                                    </div>
+                                ))
+                            ) : (
+                                <p className="text-muted-foreground py-4 text-center">No students enrolled yet.</p>
+                            )}
+                        </div>
                     </CardContent>
                 </Card>
 
