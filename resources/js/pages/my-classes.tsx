@@ -158,8 +158,8 @@ function MyClassesPage({ classes, type }: MyClassesPageProps) {
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
                 <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
                     <div>
-                        <h1 className="text-2xl font-bold">{type === 'teacher' ? 'My Teaching Schedule' : 'My Class Schedule'}</h1>
-                        <p className="text-muted-foreground">
+                        <h1 className="text-2xl font-bold tracking-tight">{type === 'teacher' ? 'My Teaching Schedule' : 'My Class Schedule'}</h1>
+                        <p className="text-muted-foreground mt-1">
                             {selectedYear && selectedSemester
                                 ? `Academic Year ${selectedYear} - Semester ${selectedSemester}`
                                 : 'Select an academic year and semester to view your classes'}
@@ -170,43 +170,43 @@ function MyClassesPage({ classes, type }: MyClassesPageProps) {
                 {/* Summary Cards */}
                 {filteredClasses.length > 0 && (
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                        <Card>
-                            <CardContent className="pt-3">
-                                <div className="flex justify-between">
+                        <Card className="border-l-primary overflow-hidden border-l-4">
+                            <CardContent className="px-6">
+                                <div className="flex items-center justify-between">
                                     <div>
-                                        <p className="text-muted-foreground text-sm">Total Classes</p>
-                                        <p className="text-2xl font-bold">{summary.totalClasses}</p>
+                                        <p className="text-muted-foreground text-sm font-medium">Total Classes</p>
+                                        <p className="mt-1 text-2xl font-bold">{summary.totalClasses}</p>
                                     </div>
-                                    <div className="bg-primary/10 flex h-10 w-10 items-center justify-center rounded-full">
-                                        <BookMarked className="text-primary h-5 w-5" />
+                                    <div className="bg-primary/10 flex h-12 w-12 items-center justify-center rounded-full">
+                                        <BookMarked className="text-primary h-6 w-6" />
                                     </div>
                                 </div>
                             </CardContent>
                         </Card>
 
-                        <Card>
-                            <CardContent className="pt-3">
-                                <div className="flex justify-between">
+                        <Card className="border-l-primary overflow-hidden border-l-4">
+                            <CardContent className="px-6">
+                                <div className="flex items-center justify-between">
                                     <div>
-                                        <p className="text-muted-foreground text-sm">Total Hours</p>
-                                        <p className="text-2xl font-bold">{summary.totalHours}</p>
+                                        <p className="text-muted-foreground text-sm font-medium">Total Hours</p>
+                                        <p className="mt-1 text-2xl font-bold">{summary.totalHours}</p>
                                     </div>
-                                    <div className="bg-primary/10 flex h-10 w-10 items-center justify-center rounded-full">
-                                        <Clock className="text-primary h-5 w-5" />
+                                    <div className="bg-primary/10 flex h-12 w-12 items-center justify-center rounded-full">
+                                        <Clock className="text-primary h-6 w-6" />
                                     </div>
                                 </div>
                             </CardContent>
                         </Card>
 
-                        <Card>
-                            <CardContent className="pt-3">
-                                <div className="flex justify-between">
+                        <Card className="border-l-primary overflow-hidden border-l-4">
+                            <CardContent className="px-6">
+                                <div className="flex items-center justify-between">
                                     <div>
-                                        <p className="text-muted-foreground text-sm">Unique Subjects</p>
-                                        <p className="text-2xl font-bold">{summary.uniqueSubjects}</p>
+                                        <p className="text-muted-foreground text-sm font-medium">Unique Subjects</p>
+                                        <p className="mt-1 text-2xl font-bold">{summary.uniqueSubjects}</p>
                                     </div>
-                                    <div className="bg-primary/10 flex h-10 w-10 items-center justify-center rounded-full">
-                                        <BookOpen className="text-primary h-5 w-5" />
+                                    <div className="bg-primary/10 flex h-12 w-12 items-center justify-center rounded-full">
+                                        <BookOpen className="text-primary h-6 w-6" />
                                     </div>
                                 </div>
                             </CardContent>
@@ -215,82 +215,89 @@ function MyClassesPage({ classes, type }: MyClassesPageProps) {
                 )}
 
                 {/* Filters */}
-                <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-3">
-                    <div>
-                        <label htmlFor="academic-year" className="mb-1 block text-sm font-medium">
-                            Academic Year
-                        </label>
-                        <Select
-                            value={selectedYear}
-                            onValueChange={(value) => {
-                                setSelectedYear(value);
-                                // Set semester to '1' or first available semester when year changes
-                                const availableSems = Object.keys(classes[value] || {}).sort();
-                                setSelectedSemester(availableSems[0] || '1');
-                            }}
-                        >
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select Academic Year" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {academicYears.map((year) => (
-                                    <SelectItem key={year} value={year}>
-                                        {year}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
+                <Card className="mb-6">
+                    <CardContent className="p-6">
+                        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+                            <div>
+                                <label htmlFor="academic-year" className="mb-2 block text-sm font-medium">
+                                    Academic Year
+                                </label>
+                                <Select
+                                    value={selectedYear}
+                                    onValueChange={(value) => {
+                                        setSelectedYear(value);
+                                        // Set semester to '1' or first available semester when year changes
+                                        const availableSems = Object.keys(classes[value] || {}).sort();
+                                        setSelectedSemester(availableSems[0] || '1');
+                                    }}
+                                >
+                                    <SelectTrigger className="h-10">
+                                        <SelectValue placeholder="Select Academic Year" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {academicYears.map((year) => (
+                                            <SelectItem key={year} value={year}>
+                                                {year}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
 
-                    <div>
-                        <label htmlFor="semester" className="mb-1 block text-sm font-medium">
-                            Semester
-                        </label>
-                        <Select value={selectedSemester} onValueChange={setSelectedSemester} disabled={!selectedYear}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select Semester" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {availableSemesters.map((semester) => (
-                                    <SelectItem key={semester} value={semester}>
-                                        Semester {semester}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
+                            <div>
+                                <label htmlFor="semester" className="mb-2 block text-sm font-medium">
+                                    Semester
+                                </label>
+                                <Select value={selectedSemester} onValueChange={setSelectedSemester} disabled={!selectedYear}>
+                                    <SelectTrigger className="h-10">
+                                        <SelectValue placeholder="Select Semester" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {availableSemesters.map((semester) => (
+                                            <SelectItem key={semester} value={semester}>
+                                                Semester {semester}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
 
-                    <div>
-                        <label htmlFor="search" className="mb-1 block text-sm font-medium">
-                            Search
-                        </label>
-                        <div className="relative">
-                            <Search className="text-muted-foreground absolute top-2.5 left-2.5 h-4 w-4" />
-                            <Input
-                                type="text"
-                                id="search"
-                                className="pl-8"
-                                placeholder="Search classes..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                            />
+                            <div>
+                                <label htmlFor="search" className="mb-2 block text-sm font-medium">
+                                    Search
+                                </label>
+                                <div className="relative">
+                                    <Search className="text-muted-foreground absolute top-3 left-3 h-4 w-4" />
+                                    <Input
+                                        type="text"
+                                        id="search"
+                                        className="h-10 pl-10"
+                                        placeholder="Search classes..."
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                    />
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                </div>
+                    </CardContent>
+                </Card>
 
                 {/* View Tabs */}
                 {filteredClasses.length > 0 ? (
                     <Tabs defaultValue="grid" className="w-full" onValueChange={(value) => setViewMode(value as any)}>
-                        <TabsList className="mb-6 grid w-full grid-cols-2">
-                            <TabsTrigger value="grid">
-                                <Grid3X3 className="mr-2 h-4 w-4" />
-                                Card View
-                            </TabsTrigger>
-                            <TabsTrigger value="list">
-                                <List className="mr-2 h-4 w-4" />
-                                Schedule View
-                            </TabsTrigger>
-                        </TabsList>
+                        <div className="mb-4 flex items-center justify-between">
+                            <h2 className="text-xl font-semibold">View Options</h2>
+                            <TabsList className="grid w-[300px] grid-cols-2">
+                                <TabsTrigger value="grid" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                                    <Grid3X3 className="mr-2 h-4 w-4" />
+                                    Card View
+                                </TabsTrigger>
+                                <TabsTrigger value="list" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                                    <List className="mr-2 h-4 w-4" />
+                                    Schedule View
+                                </TabsTrigger>
+                            </TabsList>
+                        </div>
 
                         {/* Grid View */}
                         <TabsContent value="grid" className="mt-0">
@@ -298,49 +305,56 @@ function MyClassesPage({ classes, type }: MyClassesPageProps) {
                                 {filteredClasses.map((classItem) => (
                                     <Card
                                         key={classItem.id}
-                                        className="cursor-pointer overflow-hidden transition-all duration-300 hover:shadow-md"
+                                        className="group cursor-pointer overflow-hidden transition-all duration-300 hover:shadow-lg"
                                         onClick={() => handleClassClick(classItem.id)}
                                     >
-                                        <CardHeader className="bg-primary text-primary-foreground py-4">
+                                        <CardHeader className="bg-primary text-primary-foreground group-hover:bg-primary/90 py-4 transition-colors">
                                             <div className="flex items-start justify-between">
                                                 <div>
                                                     <CardTitle>{classItem.subject.name}</CardTitle>
-                                                    <CardDescription className="text-primary-foreground/80">{classItem.subject.code}</CardDescription>
+                                                    <CardDescription className="text-primary-foreground/90 mt-1">
+                                                        {classItem.subject.code}
+                                                    </CardDescription>
                                                 </div>
-                                                <Badge variant={classItem.status === 'Active' ? 'default' : 'secondary'}>{classItem.status}</Badge>
+                                                <Badge
+                                                    variant={classItem.status === 'Active' ? 'default' : 'secondary'}
+                                                    className="bg-white/20 hover:bg-white/30"
+                                                >
+                                                    {classItem.status}
+                                                </Badge>
                                             </div>
                                         </CardHeader>
 
-                                        <CardContent className="space-y-4 pt-6">
-                                            <div className="flex items-start gap-3">
-                                                <div className="bg-primary/10 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full">
-                                                    <Calendar className="text-primary h-4 w-4" />
+                                        <CardContent className="space-y-5 pt-6">
+                                            <div className="flex items-start gap-4">
+                                                <div className="bg-primary/10 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full">
+                                                    <Calendar className="text-primary h-5 w-5" />
                                                 </div>
                                                 <div>
-                                                    <p className="font-medium">{classItem.day}</p>
-                                                    <p className="text-muted-foreground text-sm">
+                                                    <p className="text-base font-medium">{classItem.day}</p>
+                                                    <p className="text-muted-foreground mt-0.5 text-sm">
                                                         {formatTime(classItem.start_time)} - {formatTime(classItem.end_time)}
                                                     </p>
                                                 </div>
                                             </div>
 
-                                            <div className="flex items-start gap-3">
-                                                <div className="bg-primary/10 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full">
-                                                    <Home className="text-primary h-4 w-4" />
+                                            <div className="flex items-start gap-4">
+                                                <div className="bg-primary/10 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full">
+                                                    <Home className="text-primary h-5 w-5" />
                                                 </div>
                                                 <div>
-                                                    <p className="font-medium">{classItem.room.name}</p>
-                                                    <p className="text-muted-foreground text-sm">{classItem.room.building.name}</p>
+                                                    <p className="text-base font-medium">{classItem.room.name}</p>
+                                                    <p className="text-muted-foreground mt-0.5 text-sm">{classItem.room.building.name}</p>
                                                 </div>
                                             </div>
 
-                                            <div className="flex items-start gap-3">
-                                                <div className="bg-primary/10 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full">
-                                                    <BookOpen className="text-primary h-4 w-4" />
+                                            <div className="flex items-start gap-4">
+                                                <div className="bg-primary/10 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full">
+                                                    <BookOpen className="text-primary h-5 w-5" />
                                                 </div>
                                                 <div>
-                                                    <p className="font-medium">{classItem.course.name}</p>
-                                                    <p className="text-muted-foreground text-sm">{classItem.course.course_code}</p>
+                                                    <p className="text-base font-medium">{classItem.course.name}</p>
+                                                    <p className="text-muted-foreground mt-0.5 text-sm">{classItem.course.course_code}</p>
                                                 </div>
                                             </div>
 
@@ -353,12 +367,16 @@ function MyClassesPage({ classes, type }: MyClassesPageProps) {
                                             </div>
                                         </CardContent>
 
-                                        <CardFooter className="bg-muted/50 flex justify-between">
-                                            <div className="text-muted-foreground flex items-center gap-1 text-sm">
+                                        <CardFooter className="bg-muted/50 flex justify-between py-2">
+                                            <div className="text-muted-foreground flex items-center gap-2 text-sm font-medium">
                                                 <Users className="h-4 w-4" />
                                                 {classItem.max_students} students
                                             </div>
-                                            <Button variant="ghost" size="sm" className="gap-1">
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="hover:bg-primary/10 hover:text-primary gap-1 transition-colors"
+                                            >
                                                 View details
                                                 <ChevronRight className="h-4 w-4" />
                                             </Button>
@@ -370,19 +388,19 @@ function MyClassesPage({ classes, type }: MyClassesPageProps) {
 
                         {/* Schedule View */}
                         <TabsContent value="list" className="mt-0">
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>Weekly Schedule</CardTitle>
-                                    <CardDescription>
+                            <Card className="border-t-primary border-t-4">
+                                <CardHeader className="pb-2">
+                                    <CardTitle className="text-2xl">Weekly Schedule</CardTitle>
+                                    <CardDescription className="text-base">
                                         {selectedYear} - Semester {selectedSemester}
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent className="p-0">
-                                    <ScrollArea className="h-[600px]">
+                                    <ScrollArea className="h-[650px]">
                                         {Object.entries(classesByDay).map(([day, dayClasses]) => (
                                             <div key={day} className="border-b last:border-b-0">
-                                                <div className="bg-muted/50 flex items-center p-4 font-medium">
-                                                    <CalendarDays className="text-primary mr-2 h-4 w-4" />
+                                                <div className="bg-muted/80 flex items-center p-4 text-base font-semibold">
+                                                    <CalendarDays className="text-primary mr-3 h-5 w-5" />
                                                     {day}
                                                 </div>
 
@@ -392,7 +410,7 @@ function MyClassesPage({ classes, type }: MyClassesPageProps) {
                                                             <div
                                                                 key={classItem.id}
                                                                 onClick={() => handleClassClick(classItem.id)}
-                                                                className="hover:bg-muted/50 cursor-pointer p-4 transition-colors"
+                                                                className="hover:bg-muted/30 hover:border-l-primary cursor-pointer border-l-2 border-transparent p-5 transition-colors"
                                                             >
                                                                 <div className="flex flex-col gap-4 md:flex-row md:items-center">
                                                                     <div className="w-32 flex-shrink-0">
@@ -447,27 +465,29 @@ function MyClassesPage({ classes, type }: MyClassesPageProps) {
                         </TabsContent>
                     </Tabs>
                 ) : (
-                    <Card>
-                        <CardContent className="flex flex-col items-center justify-center py-12">
-                            <Calendar className="text-muted-foreground/30 mb-4 h-16 w-16" />
+                    <Card className="border border-dashed">
+                        <CardContent className="flex flex-col items-center justify-center py-16">
+                            <div className="bg-muted/50 mb-6 rounded-full p-6">
+                                <Calendar className="text-primary/60 h-16 w-16" />
+                            </div>
                             {selectedYear && selectedSemester ? (
                                 <>
-                                    <h3 className="mb-1 text-lg font-medium">No classes found</h3>
-                                    <p className="text-muted-foreground max-w-md text-center">
+                                    <h3 className="mb-2 text-xl font-medium">No classes found</h3>
+                                    <p className="text-muted-foreground max-w-md text-center text-base">
                                         {searchQuery
                                             ? `No classes match your search "${searchQuery}" for ${selectedYear} - Semester ${selectedSemester}.`
                                             : `You don't have any classes for ${selectedYear} - Semester ${selectedSemester}.`}
                                     </p>
                                     {searchQuery && (
-                                        <Button variant="ghost" onClick={() => setSearchQuery('')} className="mt-4">
+                                        <Button variant="outline" onClick={() => setSearchQuery('')} className="mt-6">
                                             Clear search
                                         </Button>
                                     )}
                                 </>
                             ) : (
                                 <>
-                                    <h3 className="mb-1 text-lg font-medium">Select filters</h3>
-                                    <p className="text-muted-foreground text-center">
+                                    <h3 className="mb-2 text-xl font-medium">Select filters</h3>
+                                    <p className="text-muted-foreground text-center text-base">
                                         Please select an academic year and semester to view your classes.
                                     </p>
                                 </>
