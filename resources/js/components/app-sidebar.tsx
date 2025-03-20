@@ -77,6 +77,11 @@ const roleBasedNavItems: Record<string, NavItem[]> = {
             url: '/my-schedules',
             icon: CalendarIcon, // Change to appropriate icon
         },
+        {
+            title: 'My Classes',
+            url: '/my-classes',
+            icon: Notebook, // Change to appropriate icon
+        },
     ],
     'program head': [
         {

@@ -66,6 +66,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
         }
         return redirect()->route('dashboard')->with('error', 'Unauthorized access');
     })->name('my-schedules');
+
+    Route::get('/my-classes', function () {
+        $user = auth()->user();
+        if ($user->employee) {
+            return app(ScheduleController::class)->getTeacherClasses(request());
+        }
+        if ($user->student) {
+            return app(ScheduleController::class)->getStudentClasses(request());
+        }
+        return redirect()->route('dashboard')->with('error', 'Unauthorized access');
+    });
 });
 
 

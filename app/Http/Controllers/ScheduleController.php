@@ -256,4 +256,46 @@ class ScheduleController extends Controller
             'type' => $type
         ]);
     }
+
+    public function getTeacherClasses()
+    {
+        $teacherId = auth()->user()->employee->id;
+
+        $classes = Schedule::with(['subject', 'room.building', 'course'])
+            ->where('professor_id', $teacherId)
+            ->where('status', 'Active')
+            ->orderBy('day')
+            ->orderBy('start_time')
+            ->get()
+            ->groupBy(['academic_year', 'semester']);
+
+        return  $this->renderClasses($classes, 'teacher');
+    }
+
+
+    public function getStudentClasses()
+    {
+        $student = auth()->user()->student;
+
+        $classes = Schedule::with(['subject', 'room.building', 'course'])
+            ->where('course_id', $student->course_id)
+            ->where('year_level', $student->year_level)
+            ->where('block', $student->block)
+            ->where('status', 'Active')
+            ->orderBy('day')
+            ->orderBy('start_time')
+            ->get()
+            ->groupBy(['academic_year', 'semester']);
+
+        return $this->renderClasses($classes, 'student');
+    }
+
+
+    private function renderClasses($schedules, $type)
+    {
+        return Inertia::render('my-classes', [
+            'classes' => $schedules,
+            'type' => $type
+        ]);
+    }
 }

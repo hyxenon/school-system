@@ -224,3 +224,26 @@ export interface Announcements {
     created_at: string;
     updated_at: string;
 }
+
+export interface Class {
+    id: number;
+    subject_id: number;
+    room_id: number;
+    course_id: number;
+    professor_id: number;
+    academic_year: string;
+    semester: number;
+    year_level: number;
+    block: string;
+    schedule_type: string;
+    day: string;
+    start_time: string;
+    end_time: string;
+    max_students: number;
+    status: string;
+    created_at: string;
+    updated_at: string;
+    subject: Subject;
+    room: Room;
+    course: Course;
+}

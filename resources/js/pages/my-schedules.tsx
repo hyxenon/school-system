@@ -177,7 +177,7 @@ function MySchedulesPage({ schedules, type }: MySchedulesPageProps) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="My Schedules" />
-            <div className="flex h-full flex-1 flex-col gap-4 p-4">
+            <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h1 className="text-2xl font-bold">My Schedule</h1>
