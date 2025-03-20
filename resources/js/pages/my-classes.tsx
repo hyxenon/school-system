@@ -224,7 +224,9 @@ function MyClassesPage({ classes, type }: MyClassesPageProps) {
                             value={selectedYear}
                             onValueChange={(value) => {
                                 setSelectedYear(value);
-                                setSelectedSemester('');
+                                // Set semester to '1' or first available semester when year changes
+                                const availableSems = Object.keys(classes[value] || {}).sort();
+                                setSelectedSemester(availableSems[0] || '1');
                             }}
                         >
                             <SelectTrigger>
