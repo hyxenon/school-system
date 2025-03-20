@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AnnouncementController;
+use App\Http\Controllers\AssignmentController;
 use App\Http\Controllers\BuildingController;
 use App\Http\Controllers\CourseController;
 use App\Http\Controllers\CurriculumController;
@@ -79,6 +80,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 
     Route::get('/classes/{id}', [ScheduleController::class, 'show'])->name('classes.show');
+    Route::post('/assignments', [AssignmentController::class, 'store'])->name('assignments.store');
 });
 
 

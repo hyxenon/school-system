@@ -12,19 +12,28 @@ class Assignment extends Model
 
     protected $fillable = [
         'subject_id',
+        'schedule_id', // Add this line
         'title',
         'description',
         'due_date',
         'assessment_type',
-        'created_by',
         'year_level',
-        'block'
+        'block',
+        'created_by'
+    ];
 
+    protected $casts = [
+        'due_date' => 'datetime',
     ];
 
     public function subject()
     {
         return $this->belongsTo(Subject::class);
+    }
+
+    public function schedule() // Add this relationship
+    {
+        return $this->belongsTo(Schedule::class);
     }
 
     public function studentSubmissions()

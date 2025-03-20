@@ -1,38 +1,296 @@
 'use client';
 
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
-import { Head } from '@inertiajs/react';
+import { Head, useForm } from '@inertiajs/react';
+import { Calendar, Clock, Home, Pencil, Plus, Users } from 'lucide-react';
+import { useState } from 'react';
+import { toast } from 'sonner';
 
 interface ClassDetailsPageProps {
     class: {
         id: number;
         subject: {
+            id: number;
             name: string;
             code: string;
+            assignments: Array<{
+                id: number;
+                title: string;
+                description: string;
+                due_date: string;
+                assessment_type: string;
+                created_at: string;
+            }>;
         };
+        room: {
+            name: string;
+            building: {
+                name: string;
+            };
+        };
+        day: string;
+        start_time: string;
+        end_time: string;
+        year_level: number;
+        block: string;
+        max_students: number;
+        schedule_type: string;
     };
+    userRole: 'teacher' | 'student';
 }
 
-function ClassDetailsPage({ class: classDetails }: ClassDetailsPageProps) {
+function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsPageProps) {
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const { data, setData, post, processing, errors } = useForm({
+        title: '',
+        description: '',
+        due_date: '',
+        assessment_type: 'Assignment',
+        period: 'Prelims',
+        total_points: 100,
+        subject_id: classDetails.subject.id,
+        schedule_id: classDetails.id,
+        year_level: classDetails.year_level,
+        block: classDetails.block,
+    });
+
     const breadcrumbs: BreadcrumbItem[] = [
-        {
-            title: 'My Classes',
-            href: '/my-classes',
-        },
-        {
-            title: `Class ${classDetails.subject.code}`,
-            href: `/classes/${classDetails.id}`,
-        },
+        { title: 'My Classes', href: '/my-classes' },
+        { title: `Class ${classDetails.subject.code}`, href: `/classes/${classDetails.id}` },
     ];
+
+    const formatTime = (time: string) => {
+        const [hours, minutes] = time.split(':');
+        const hour = parseInt(hours, 10);
+        const ampm = hour >= 12 ? 'PM' : 'AM';
+        const formattedHour = hour % 12 || 12;
+        return `${formattedHour}:${minutes} ${ampm}`;
+    };
+
+    const handleSubmit = () => {
+        post('/assignments', {
+            preserveScroll: true,
+            onSuccess: () => {
+                setIsAddModalOpen(false);
+                reset();
+                toast.success('Assessment created successfully');
+            },
+            onError: (errors) => {
+                toast.error('Please check the form for errors');
+            },
+        });
+    };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`${classDetails.subject.code}`} />
-            <div className="p-4">
-                <h1 className="text-2xl font-bold">
-                    Class {classDetails.id}: {classDetails.subject.name}
-                </h1>
+            <div className="flex flex-col gap-6 p-4">
+                {/* Class Details Card */}
+                <Card>
+                    <CardHeader className="pb-4">
+                        <div className="flex items-start justify-between">
+                            <div>
+                                <CardTitle className="text-2xl">{classDetails.subject.name}</CardTitle>
+                                <CardDescription className="mt-2">
+                                    <Badge variant="outline" className="mr-2">
+                                        {classDetails.subject.code}
+                                    </Badge>
+                                    <Badge>{classDetails.schedule_type}</Badge>
+                                </CardDescription>
+                            </div>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="grid gap-6">
+                        <div className="grid gap-4 md:grid-cols-3">
+                            <div className="flex items-start gap-4">
+                                <div className="bg-primary/10 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full">
+                                    <Calendar className="text-primary h-5 w-5" />
+                                </div>
+                                <div>
+                                    <p className="text-base font-medium">{classDetails.day}</p>
+                                    <p className="text-muted-foreground mt-0.5 text-sm">
+                                        {formatTime(classDetails.start_time)} - {formatTime(classDetails.end_time)}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="flex items-start gap-4">
+                                <div className="bg-primary/10 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full">
+                                    <Home className="text-primary h-5 w-5" />
+                                </div>
+                                <div>
+                                    <p className="text-base font-medium">{classDetails.room.name}</p>
+                                    <p className="text-muted-foreground mt-0.5 text-sm">{classDetails.room.building.name}</p>
+                                </div>
+                            </div>
+
+                            <div className="flex items-start gap-4">
+                                <div className="bg-primary/10 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full">
+                                    <Users className="text-primary h-5 w-5" />
+                                </div>
+                                <div>
+                                    <p className="text-base font-medium">Class Details</p>
+                                    <p className="text-muted-foreground mt-0.5 text-sm">
+                                        Year {classDetails.year_level} - Block {classDetails.block}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* Assignments Section */}
+                <Card>
+                    <CardHeader>
+                        <div className="flex items-center justify-between">
+                            <CardTitle>Assignments</CardTitle>
+                            {userRole === 'teacher' && (
+                                <Button onClick={() => setIsAddModalOpen(true)}>
+                                    <Plus className="mr-2 h-4 w-4" />
+                                    Add Assignment
+                                </Button>
+                            )}
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="divide-y">
+                            {classDetails.subject.assignments?.length > 0 ? (
+                                classDetails.subject.assignments.map((assignment) => (
+                                    <div key={assignment.id} className="py-4 first:pt-0 last:pb-0">
+                                        <div className="flex items-start justify-between">
+                                            <div>
+                                                <h4 className="font-medium">{assignment.title}</h4>
+                                                <p className="text-muted-foreground mt-1 text-sm">{assignment.description}</p>
+                                                <div className="mt-2 flex items-center gap-4">
+                                                    <Badge variant="outline">{assignment.assessment_type}</Badge>
+                                                    <span className="text-muted-foreground flex items-center text-xs">
+                                                        <Clock className="mr-1 h-3 w-3" />
+                                                        Due: {new Date(assignment.due_date).toLocaleDateString()}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            {userRole === 'teacher' && (
+                                                <Button variant="ghost" size="icon">
+                                                    <Pencil className="h-4 w-4" />
+                                                </Button>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))
+                            ) : (
+                                <p className="text-muted-foreground py-4 text-center">No assignments yet.</p>
+                            )}
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* Add Assignment Modal */}
+                {userRole === 'teacher' && (
+                    <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Add Assignment</DialogTitle>
+                                <DialogDescription>Create a new assignment for this class.</DialogDescription>
+                            </DialogHeader>
+                            <div className="grid gap-4 py-4">
+                                <div className="grid gap-2">
+                                    <Label htmlFor="title">Title</Label>
+                                    <Input
+                                        id="title"
+                                        value={data.title}
+                                        onChange={(e) => setData('title', e.target.value)}
+                                        placeholder="Assignment title"
+                                        className={errors.title ? 'border-red-500' : ''}
+                                    />
+                                    {errors.title && <p className="text-sm text-red-500">{errors.title}</p>}
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="description">Description</Label>
+                                    <Textarea
+                                        id="description"
+                                        value={data.description}
+                                        onChange={(e) => setData('description', e.target.value)}
+                                        placeholder="Assignment description"
+                                        className={errors.description ? 'border-red-500' : ''}
+                                    />
+                                    {errors.description && <p className="text-sm text-red-500">{errors.description}</p>}
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="due_date">Due Date</Label>
+                                    <Input
+                                        id="due_date"
+                                        type="date"
+                                        value={data.due_date}
+                                        onChange={(e) => setData('due_date', e.target.value)}
+                                        className={errors.due_date ? 'border-red-500' : ''}
+                                    />
+                                    {errors.due_date && <p className="text-sm text-red-500">{errors.due_date}</p>}
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="assessment_type">Assessment Type</Label>
+                                    <Select value={data.assessment_type} onValueChange={(value) => setData('assessment_type', value)}>
+                                        <SelectTrigger className={errors.assessment_type ? 'border-red-500' : ''}>
+                                            <SelectValue placeholder="Select assessment type" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="Assignment">Assignment</SelectItem>
+                                            <SelectItem value="Quiz">Quiz</SelectItem>
+                                            <SelectItem value="Exam">Exam</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    {errors.assessment_type && <p className="text-sm text-red-500">{errors.assessment_type}</p>}
+                                </div>
+
+                                <div className="grid gap-2">
+                                    <Label htmlFor="period">Period</Label>
+                                    <Select value={data.period} onValueChange={(value) => setData('period', value)}>
+                                        <SelectTrigger className={errors.period ? 'border-red-500' : ''}>
+                                            <SelectValue placeholder="Select period" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="Prelims">Prelims</SelectItem>
+                                            <SelectItem value="Midterms">Midterms</SelectItem>
+                                            <SelectItem value="Finals">Finals</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    {errors.period && <p className="text-sm text-red-500">{errors.period}</p>}
+                                </div>
+
+                                <div className="grid gap-2">
+                                    <Label htmlFor="total_points">Total Points</Label>
+                                    <Input
+                                        id="total_points"
+                                        type="number"
+                                        min="1"
+                                        max="100"
+                                        value={data.total_points}
+                                        onChange={(e) => setData('total_points', e.target.value)}
+                                        className={errors.total_points ? 'border-red-500' : ''}
+                                    />
+                                    {errors.total_points && <p className="text-sm text-red-500">{errors.total_points}</p>}
+                                </div>
+                                {/* ...rest of the form fields remain the same... */}
+                            </div>
+                            <DialogFooter>
+                                <Button variant="outline" onClick={() => setIsAddModalOpen(false)}>
+                                    Cancel
+                                </Button>
+                                <Button onClick={handleSubmit} disabled={processing}>
+                                    {processing ? 'Creating...' : 'Create Assignment'}
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+                )}
             </div>
         </AppLayout>
     );

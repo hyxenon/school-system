@@ -311,11 +311,23 @@ class ScheduleController extends Controller
 
     public function show($id)
     {
-        $schedule = Schedule::with(['subject', 'room.building', 'course'])
-            ->findOrFail($id);
+        $schedule = Schedule::with([
+            'subject',
+            'room.building',
+            'course',
+            'subject.assignments' => function ($query) {
+                $query->orderBy('created_at', 'desc');
+            }
+        ])->findOrFail($id);
+
+        $userRole = 'student';
+        if (auth()->user()->employee) {
+            $userRole = 'teacher';
+        }
 
         return Inertia::render('class-details', [
-            'class' => $schedule
+            'class' => $schedule,
+            'userRole' => $userRole
         ]);
     }
 }
