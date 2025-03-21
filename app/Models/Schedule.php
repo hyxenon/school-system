@@ -42,13 +42,15 @@ class Schedule extends Model
         return $this->belongsTo(Employee::class, 'professor_id');
     }
 
-    public function students()
-    {
-        return $this->belongsToMany(Student::class, 'schedule_student')->withTimestamps();
-    }
-
     public function course()
     {
         return $this->belongsTo(Course::class);
+    }
+
+    public function students()
+    {
+        return $this->hasMany(Student::class, 'course_id', 'course_id')
+            ->where('year_level', $this->year_level)
+            ->where('block', $this->block);
     }
 }

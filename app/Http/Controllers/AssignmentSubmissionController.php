@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AssignmentSubmission;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 
 class AssignmentSubmissionController extends Controller
 {
@@ -28,7 +29,30 @@ class AssignmentSubmissionController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $validator = Validator::make($request->all(), [
+            'student_id' => 'required|exists:students,id',
+            'assignment_id' => 'required|exists:assignments,id',
+            'grade' => 'required|numeric|min:0',
+            'feedback' => 'nullable|string',
+        ]);
+
+        if ($validator->fails()) {
+            return back()->withErrors($validator)->withInput();
+        }
+
+        $submission = AssignmentSubmission::updateOrCreate(
+            [
+                'student_id' => $request->student_id,
+                'assignment_id' => $request->assignment_id,
+            ],
+            [
+                'grade' => $request->grade,
+                'feedback' => $request->feedback,
+                'submission_date' => now(),
+            ]
+        );
+
+        return back()->with('success', 'Grade submitted successfully');
     }
 
     /**
@@ -50,9 +74,23 @@ class AssignmentSubmissionController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, AssignmentSubmission $assignmentSubmission)
+    public function update(Request $request, AssignmentSubmission $submission)
     {
-        //
+        $validator = Validator::make($request->all(), [
+            'grade' => 'required|numeric|min:0',
+            'feedback' => 'nullable|string',
+        ]);
+
+        if ($validator->fails()) {
+            return back()->withErrors($validator)->withInput();
+        }
+
+        $submission->update([
+            'grade' => $request->grade,
+            'feedback' => $request->feedback,
+        ]);
+
+        return back()->with('success', 'Grade updated successfully');
     }
 
     /**

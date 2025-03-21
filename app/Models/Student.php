@@ -40,6 +40,11 @@ class Student extends Model
         return $this->hasMany(AssignmentSubmission::class);
     }
 
+    public function submissions()
+    {
+        return $this->hasMany(AssignmentSubmission::class);
+    }
+
     public function payments()
     {
         return $this->hasMany(Payment::class);

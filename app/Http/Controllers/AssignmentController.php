@@ -3,8 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Assignment;
+use App\Models\AssignmentSubmission;
+use App\Models\Schedule;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Inertia\Inertia;
 
 class AssignmentController extends Controller
 {
@@ -70,7 +73,18 @@ class AssignmentController extends Controller
      */
     public function show(Assignment $assignment)
     {
-        //
+        $schedule = Schedule::with([
+            'subject',
+            'subject.assignments',
+            'students.submissions.assignment',
+            'room.building',
+            'course'
+        ])->findOrFail($assignment->schedule_id);
+
+        return Inertia::render('assignment-details', [
+            'schedule' => $schedule,
+            'assignment' => $assignment
+        ]);
     }
 
     /**
@@ -135,5 +149,71 @@ class AssignmentController extends Controller
                 ->back()
                 ->withErrors(['error' => 'Failed to delete assessment']);
         }
+    }
+
+    public function showGrading(Assignment $assignment)
+    {
+        $assignment->load(['subject', 'schedule']);
+
+        $students = \App\Models\Student::with([
+            'user',
+            'submissions' => function ($query) use ($assignment) {
+                $query->where('assignment_id', $assignment->id);
+            }
+        ])
+            ->join('users', 'students.user_id', '=', 'users.id') // Add this join
+            ->where('course_id', $assignment->schedule->course_id)
+            ->where('year_level', $assignment->schedule->year_level)
+            ->where('block', $assignment->schedule->block)
+            ->orderBy('users.name')
+            ->select('students.*') // Add this to select only student fields
+            ->get();
+
+        // Debug log
+        \Log::info('Assignment grading data:', [
+            'assignment' => $assignment->toArray(),
+            'students' => $students->toArray()
+        ]);
+
+        return Inertia::render('assignment-grading', [
+            'assignment' => array_merge($assignment->toArray(), [
+                'schedule' => $assignment->schedule,
+                'subject' => $assignment->subject
+            ]),
+            'students' => $students
+        ]);
+    }
+
+    public function submitGrades(Request $request, Assignment $assignment)
+    {
+        $validator = Validator::make($request->all(), [
+            'grades' => 'required|array',
+            'grades.*.student_id' => 'required|exists:students,id',
+            'grades.*.grade' => 'nullable|numeric|min:0|max:' . $assignment->total_points, // Changed from required to nullable
+            'grades.*.feedback' => 'nullable|string',
+        ]);
+
+        if ($validator->fails()) {
+            return back()->withErrors($validator);
+        }
+
+        foreach ($request->grades as $grade) {
+            // Only create/update if grade is provided
+            if (isset($grade['grade']) && $grade['grade'] !== '') {
+                AssignmentSubmission::updateOrCreate(
+                    [
+                        'assignment_id' => $assignment->id,
+                        'student_id' => $grade['student_id'],
+                    ],
+                    [
+                        'grade' => $grade['grade'],
+                        'feedback' => $grade['feedback'] ?? null,
+                        'submission_date' => now(),
+                    ]
+                );
+            }
+        }
+
+        return back()->with('success', 'Grades saved successfully');
     }
 }

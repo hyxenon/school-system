@@ -313,36 +313,42 @@ class ScheduleController extends Controller
     {
         $schedule = Schedule::with([
             'subject',
+            'subject.assignments',
             'room.building',
             'course',
-            'subject.assignments' => function ($query) {
-                $query->orderBy('created_at', 'desc');
-            }
-        ])->findOrFail($id);
-
-        // Get students with their user information
-        $students = \App\Models\Student::with('user')
-            ->where('course_id', $schedule->course_id)
-            ->where('year_level', $schedule->year_level)
-            ->where('block', $schedule->block)
-            ->join('users', 'students.user_id', '=', 'users.id')
-            ->orderBy('users.name')
-            ->select('students.*')
-            ->get();
-
-        $schedule->students = $students->map(function ($student) {
-            return [
-                'id' => $student->id,
-                'name' => $student->user->name,
-                'student_number' => $student->student_number
-            ];
-        });
+            'students.user',
+            'students.submissions.assignment' // Add this relationship loading
+        ])
+            ->findOrFail($id);
 
         $userRole = auth()->user()->employee ? 'teacher' : 'student';
 
+        $students = $schedule->students()->with(['user', 'submissions.assignment'])->get()
+            ->map(function ($student) {
+                return [
+                    'id' => $student->id,
+                    'name' => $student->user->name,
+                    'student_number' => $student->student_number,
+                    'submissions' => $student->submissions->map(function ($submission) {
+                        return [
+                            'id' => $submission->id,
+                            'assignment_id' => $submission->assignment_id,
+                            'grade' => $submission->grade,
+                            'feedback' => $submission->feedback,
+                            'assignment' => [
+                                'id' => $submission->assignment->id,
+                                'period' => $submission->assignment->period,
+                                'assessment_type' => $submission->assignment->assessment_type,
+                                'total_points' => $submission->assignment->total_points
+                            ]
+                        ];
+                    })
+                ];
+            });
+
         return Inertia::render('class-details', [
-            'class' => $schedule,
-            'userRole' => $userRole
+            'class' => array_merge($schedule->toArray(), ['students' => $students]),
+            'userRole' => $userRole // Add userRole here
         ]);
     }
 }

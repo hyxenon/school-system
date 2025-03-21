@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\AssignmentController;
+use App\Http\Controllers\AssignmentSubmissionController;
 use App\Http\Controllers\BuildingController;
 use App\Http\Controllers\CourseController;
 use App\Http\Controllers\CurriculumController;
@@ -88,6 +89,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/assignments', [AssignmentController::class, 'store'])->name('assignments.store');
     Route::put('/assignments/{assignment}', [AssignmentController::class, 'update'])->name('assignments.update');
     Route::delete('/assignments/{assignment}', [AssignmentController::class, 'destroy'])->name('assignments.destroy');
+    Route::post('/assignment-submissions', [AssignmentSubmissionController::class, 'store'])->name('assignment-submissions.store');
+    Route::put('/assignment-submissions/{submission}', [AssignmentSubmissionController::class, 'update'])->name('assignment-submissions.update');
+    Route::get('/assignments/{assignment}/grade', [AssignmentController::class, 'showGrading'])->name('assignments.grading');
+    Route::post('/assignments/{assignment}/grades', [AssignmentController::class, 'submitGrades'])->name('assignments.submit-grades');
 });
 
 require __DIR__ . '/settings.php';
