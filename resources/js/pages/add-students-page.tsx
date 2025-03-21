@@ -48,7 +48,7 @@ function AddStudentPage({ auth, courses, students: initialStudents }: { auth: an
         block: '',
         course_id: '',
         status: 'Regular' as 'Regular' | 'Irregular',
-        enrollment_status: 'Enrolled' as 'Enrolled' | 'Not Enrolled' | 'Graduated' | 'Dropped Out',
+        enrollment_status: 'Not Enrolled' as 'Enrolled' | 'Not Enrolled' | 'Graduated' | 'Dropped Out',
     });
 
     // Show flash messages
@@ -490,15 +490,15 @@ function AddStudentPage({ auth, courses, students: initialStudents }: { auth: an
                                     <Select
                                         value={data.enrollment_status}
                                         onValueChange={(value) =>
-                                            setData('enrollment_status', value as 'Enrolled' | 'Not Enrolled' | 'Graduated' | 'Dropped Out')
+                                            setData('enrollment_status', value as 'Not Enrolled' | 'Not Enrolled' | 'Graduated' | 'Dropped Out')
                                         }
                                     >
                                         <SelectTrigger id="enrollment_status">
                                             <SelectValue placeholder="Select enrollment status" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="Enrolled">Enrolled</SelectItem>
                                             <SelectItem value="Not Enrolled">Not Enrolled</SelectItem>
+                                            <SelectItem value="Enrolled">Enrolled</SelectItem>
                                             <SelectItem value="Graduated">Graduated</SelectItem>
                                             <SelectItem value="Dropped Out">Dropped Out</SelectItem>
                                         </SelectContent>
