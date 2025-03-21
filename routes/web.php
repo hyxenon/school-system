@@ -14,6 +14,7 @@ use App\Http\Controllers\RoomController;
 use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\SubjectController;
+use App\Models\Schedule;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -95,8 +96,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/assignments/{assignment}/grade', [AssignmentController::class, 'showGrading'])->name('assignments.grading');
     Route::post('/assignments/{assignment}/grades', [AssignmentController::class, 'submitGrades'])->name('assignments.submit-grades');
 
-    // Add this new route to get grade weights
-    Route::get('/api/classes/{schedule}/grade-weights', function (\App\Models\Schedule $schedule) {
+
+    Route::get('/api/classes/{schedule}/grade-weights', function (Schedule $schedule) {
         $weights = $schedule->gradeWeights;
         if (!$weights) {
             return response()->json([

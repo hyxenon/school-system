@@ -6,6 +6,7 @@ use App\Models\Assignment;
 use App\Models\AssignmentSubmission;
 use App\Models\Schedule;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Inertia\Inertia;
 
@@ -32,6 +33,9 @@ class AssignmentController extends Controller
      */
     public function store(Request $request)
     {
+        // Log the incoming request data for debugging
+        Log::info('Assignment store request data:', $request->all());
+
         $validator = Validator::make($request->all(), [
             'title' => 'required|string|max:255',
             'description' => 'required|string',
@@ -46,6 +50,7 @@ class AssignmentController extends Controller
         ]);
 
         if ($validator->fails()) {
+            Log::error('Assignment validation failed:', $validator->errors()->toArray());
             return back()
                 ->withErrors($validator)
                 ->withInput();
@@ -55,12 +60,15 @@ class AssignmentController extends Controller
             $data = $validator->validated();
             $data['created_by'] = auth()->user()->employee->id;
 
-            Assignment::create($data);
+            // Create the assignment and log success
+            $assignment = Assignment::create($data);
+            Log::info('Assignment created successfully:', ['id' => $assignment->id]);
 
             return redirect()
                 ->back()
                 ->with('success', 'Assessment created successfully');
         } catch (\Exception $e) {
+            Log::error('Failed to create assignment:', ['error' => $e->getMessage()]);
             return redirect()
                 ->back()
                 ->withErrors(['error' => 'Failed to create assessment'])
@@ -100,6 +108,9 @@ class AssignmentController extends Controller
      */
     public function update(Request $request, Assignment $assignment)
     {
+        // Log the incoming request data for debugging
+        Log::info('Assignment update request data:', $request->all());
+
         $validator = Validator::make($request->all(), [
             'title' => 'required|string|max:255',
             'description' => 'required|string',
@@ -114,6 +125,7 @@ class AssignmentController extends Controller
         ]);
 
         if ($validator->fails()) {
+            Log::error('Assignment update validation failed:', $validator->errors()->toArray());
             return back()
                 ->withErrors($validator)
                 ->withInput();
@@ -122,11 +134,13 @@ class AssignmentController extends Controller
         try {
             $data = $validator->validated();
             $assignment->update($data);
+            Log::info('Assignment updated successfully:', ['id' => $assignment->id]);
 
             return redirect()
                 ->back()
                 ->with('success', 'Assessment updated successfully');
         } catch (\Exception $e) {
+            Log::error('Failed to update assignment:', ['error' => $e->getMessage()]);
             return redirect()
                 ->back()
                 ->withErrors(['error' => 'Failed to update assessment'])

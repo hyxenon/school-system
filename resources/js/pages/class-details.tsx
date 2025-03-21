@@ -1,5 +1,5 @@
 'use client';
-
+import StudentSection from '@/components/students/StudentSection';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -13,6 +13,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
@@ -21,78 +22,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/app-layout';
-import type { BreadcrumbItem, SharedData } from '@/types';
+import type { AssessmentFormData, AssignmentDetails, BreadcrumbItem, ClassDetailsProps, GradeWeights, GradingFormData, SharedData } from '@/types';
 import { Head, router, useForm, usePage } from '@inertiajs/react';
 import { Calendar, Clock, GraduationCap, Home, MoreHorizontal, Pencil, Plus, Trash, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast, Toaster } from 'sonner';
 
-interface ClassDetailsPageProps {
-    class: {
-        id: number;
-        subject: {
-            id: number;
-            name: string;
-            code: string;
-            assignments: Array<{
-                id: number;
-                title: string;
-                description: string;
-                due_date: string;
-                assessment_type: string;
-                period: string; // Add this
-                total_points: number; // Add this
-                created_at: string;
-            }>;
-        };
-        room: {
-            name: string;
-            building: {
-                name: string;
-            };
-        };
-        day: string;
-        start_time: string;
-        end_time: string;
-        year_level: number;
-        block: string;
-        max_students: number;
-        schedule_type: string;
-        students: Array<{
-            id: number;
-            name: string;
-            student_number: string;
-            submissions?: Array<{
-                id: number;
-                assignment_id: number;
-                grade?: number;
-                feedback?: string;
-                assignment?: {
-                    // Add this structure
-                    id: number;
-                    assessment_type: string;
-                    period: string;
-                    total_points: number;
-                };
-            }>;
-        }>;
-    };
-    userRole: 'teacher' | 'student';
-}
-
-// Add this interface near the top with other interfaces
-interface GradeWeights {
-    Assignment: number;
-    Quiz: number;
-    Exam: number;
-}
-
-function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsPageProps) {
+function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsProps) {
     const { auth } = usePage<SharedData>().props;
-
-    // Add comprehensive console logs to debug the issue
-    console.log('FULL CLASS DETAILS RESPONSE:', classDetails);
-    console.log('Does classDetails have grade_weights?', classDetails.hasOwnProperty('grade_weights'));
 
     // Check if we need to fetch grade weights separately
     const [gradeWeightsData, setGradeWeightsData] = useState(null);
@@ -103,16 +40,14 @@ function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsPagePro
         const fetchGradeWeights = async () => {
             if (!classDetails.grade_weights) {
                 setIsLoadingWeights(true);
-                console.log('Grade weights not found in initial data, attempting to fetch separately...');
 
                 try {
                     const response = await fetch(`/api/classes/${classDetails.id}/grade-weights`);
                     if (response.ok) {
                         const data = await response.json();
-                        console.log('Fetched grade weights:', data);
+
                         setGradeWeightsData(data);
                     } else {
-                        console.error('Failed to fetch grade weights:', response.statusText);
                     }
                 } catch (error) {
                     console.error('Error fetching grade weights:', error);
@@ -126,9 +61,9 @@ function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsPagePro
     }, [classDetails.id]);
 
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [editingAssignment, setEditingAssignment] = useState<null | any>(null);
+    const [editingAssignment, setEditingAssignment] = useState<AssignmentDetails | null>(null);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-    const [assignmentToDelete, setAssignmentToDelete] = useState<null | any>(null);
+    const [assignmentToDelete, setAssignmentToDelete] = useState<AssignmentDetails | null>(null);
     const [isGradingModalOpen, setIsGradingModalOpen] = useState(false);
     const [selectedStudent, setSelectedStudent] = useState(null);
 
@@ -137,7 +72,6 @@ function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsPagePro
     // Get weights from either the classDetails or the separately fetched data
     const getWeightsFromData = () => {
         if (classDetails.grade_weights) {
-            console.log('Using grade_weights from classDetails:', classDetails.grade_weights);
             return {
                 Assignment: classDetails.grade_weights.assignment_weight,
                 Quiz: classDetails.grade_weights.quiz_weight,
@@ -146,7 +80,6 @@ function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsPagePro
         }
 
         if (gradeWeightsData) {
-            console.log('Using separately fetched grade weights:', gradeWeightsData);
             return {
                 Assignment: gradeWeightsData.assignment_weight,
                 Quiz: gradeWeightsData.quiz_weight,
@@ -154,7 +87,6 @@ function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsPagePro
             };
         }
 
-        console.log('Using default weights');
         return {
             Assignment: 30,
             Quiz: 30,
@@ -167,7 +99,6 @@ function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsPagePro
     // Update weights when gradeWeightsData changes
     useEffect(() => {
         if (gradeWeightsData) {
-            console.log('Updating weights from fetched data');
             setWeights({
                 Assignment: gradeWeightsData.assignment_weight,
                 Quiz: gradeWeightsData.quiz_weight,
@@ -176,7 +107,7 @@ function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsPagePro
         }
     }, [gradeWeightsData]);
 
-    const { data, setData, post, put, processing, errors, reset } = useForm({
+    const { data, setData, post, put, processing, errors, reset } = useForm<AssessmentFormData>({
         title: '',
         description: '',
         due_date: '',
@@ -195,7 +126,7 @@ function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsPagePro
         post: submitGrade,
         processing: gradingProcessing,
         reset: resetGrading,
-    } = useForm({
+    } = useForm<GradingFormData>({
         student_id: '',
         assignment_id: '',
         grade: '',
@@ -203,6 +134,8 @@ function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsPagePro
     });
 
     const [activeTab, setActiveTab] = useState('assignments');
+    const [assignmentSearch, setAssignmentSearch] = useState('');
+    const [showAllAssignments, setShowAllAssignments] = useState(false);
 
     useEffect(() => {
         const assessmentTypes = {
@@ -227,6 +160,9 @@ function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsPagePro
     };
 
     const handleSubmit = () => {
+        // Add debugging to check form data before submission
+        console.log('Submitting form data:', data);
+
         if (editingAssignment) {
             put(`/assignments/${editingAssignment.id}`, {
                 preserveScroll: true,
@@ -237,6 +173,7 @@ function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsPagePro
                     toast.success('Assessment updated successfully');
                 },
                 onError: (errors) => {
+                    console.error('Submission errors:', errors);
                     toast.error(Object.values(errors)[0] as string);
                 },
             });
@@ -249,6 +186,7 @@ function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsPagePro
                     toast.success('Assessment created successfully');
                 },
                 onError: (errors) => {
+                    console.error('Submission errors:', errors);
                     toast.error(Object.values(errors)[0] as string);
                 },
             });
@@ -294,6 +232,10 @@ function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsPagePro
     const filterAssignmentsByType = (type: string) => {
         const assignments = classDetails.subject.assignments?.filter((assignment) => assignment.assessment_type === type) || [];
         return assignments;
+    };
+
+    const filteredAssignments = (type: string) => {
+        return filterAssignmentsByType(type).filter((assignment) => assignment.title.toLowerCase().includes(assignmentSearch.toLowerCase()));
     };
 
     const getAddButtonText = (type: string) => {
@@ -364,11 +306,9 @@ function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsPagePro
             return;
         }
 
-        console.log('Submitting weights to server:', weights);
         router.post(`/classes/${classDetails.id}/weights`, weights, {
             preserveScroll: true,
             onSuccess: (response) => {
-                console.log('Weight update response:', response);
                 setIsWeightsModalOpen(false);
                 toast.success('Grade weights updated successfully');
 
@@ -376,7 +316,6 @@ function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsPagePro
                 fetch(`/api/classes/${classDetails.id}/grade-weights`)
                     .then((res) => res.json())
                     .then((data) => {
-                        console.log('Refreshed grade weights after update:', data);
                         setGradeWeightsData(data);
                     })
                     .catch((err) => {
@@ -421,33 +360,6 @@ function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsPagePro
         );
     };
 
-    // Update the Students section to only show current student's grades for student users
-    const StudentSection = ({ students, userRole, currentUserId, weights }) => {
-        if (userRole === 'student') {
-            const currentStudent = students.find((student) => student.user_id === currentUserId);
-            if (!currentStudent) return null;
-
-            return (
-                <div className="divide-y">
-                    <div key={currentStudent.id} className="py-4">
-                        {/* Show only current student's grades */}
-                        <StudentGrades student={currentStudent} weights={weights} />
-                    </div>
-                </div>
-            );
-        }
-
-        return (
-            <div className="divide-y">
-                {students.map((student) => (
-                    <div key={student.id} className="py-4">
-                        <StudentGrades student={student} weights={weights} />
-                    </div>
-                ))}
-            </div>
-        );
-    };
-
     // Update the weights state handler to prevent re-renders
     const handleWeightChange = (type: string, value: string) => {
         const numValue = parseInt(value) || 0;
@@ -460,11 +372,6 @@ function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsPagePro
     // Update the WeightsModal component to prevent focus loss on typing
     const WeightsModal = () => {
         if (!isWeightsModalOpen) return null;
-
-        console.log('WEIGHTS MODAL OPENED');
-        console.log('Current weights in state:', weights);
-        console.log('Grade weights from classDetails:', classDetails.grade_weights);
-        console.log('Grade weights from separate fetch:', gradeWeightsData);
 
         // Create a separate state for the modal inputs to avoid modifying parent state while typing
         const [modalWeights, setModalWeights] = useState({
@@ -532,8 +439,6 @@ function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsPagePro
                 return;
             }
 
-            console.log('Submitting weights to server:', modalWeights);
-
             // Update the parent state once when saving
             setWeights(modalWeights);
 
@@ -541,7 +446,6 @@ function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsPagePro
             router.post(`/classes/${classDetails.id}/weights`, modalWeights, {
                 preserveScroll: true,
                 onSuccess: (response) => {
-                    console.log('Weight update response:', response);
                     setIsWeightsModalOpen(false);
                     toast.success('Grade weights updated successfully');
                 },
@@ -593,6 +497,12 @@ function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsPagePro
                 </div>
             </div>
         );
+    };
+
+    // Fix the problem with the period selection in the form
+    const handlePeriodChange = (value: string) => {
+        console.log('Period changed to:', value);
+        setData('period', value);
     };
 
     return (
@@ -683,61 +593,227 @@ function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsPagePro
                             </div>
 
                             <TabsContent value="assignments">
-                                <div className="divide-y">
-                                    {filterAssignmentsByType('Assignment').length > 0 ? (
-                                        filterAssignmentsByType('Assignment').map((assignment) => (
-                                            <div key={assignment.id} className="py-4 first:pt-0 last:pb-0">
-                                                <AssessmentCard
-                                                    assignment={assignment}
-                                                    userRole={userRole}
-                                                    currentStudent={
-                                                        userRole === 'student' ? classDetails.students.find((s) => s.user_id === auth.user.id) : null
-                                                    }
-                                                />
-                                            </div>
-                                        ))
+                                <div className="mb-4 flex items-center justify-between">
+                                    <div className="text-muted-foreground">Showing {filterAssignmentsByType('Assignment').length} assignments</div>
+                                    <div className="flex items-center gap-2">
+                                        <Input
+                                            placeholder="Search assignments..."
+                                            className="w-60"
+                                            value={assignmentSearch}
+                                            onChange={(e) => setAssignmentSearch(e.target.value)}
+                                        />
+                                        <Button variant="outline" size="sm" onClick={() => setShowAllAssignments(!showAllAssignments)}>
+                                            {showAllAssignments ? 'Show Recent' : 'Show All'}
+                                        </Button>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-4">
+                                    {filteredAssignments('Assignment').length > 0 ? (
+                                        filteredAssignments('Assignment')
+                                            .slice(0, showAllAssignments ? undefined : 5)
+                                            .map((assignment) => (
+                                                <Collapsible key={assignment.id} className="rounded-md border">
+                                                    <div className="p-4">
+                                                        <div className="flex items-start justify-between">
+                                                            <div>
+                                                                <CollapsibleTrigger className="cursor-pointer text-left hover:underline">
+                                                                    <h4 className="font-medium">{assignment.title}</h4>
+                                                                </CollapsibleTrigger>
+                                                                <div className="mt-2 flex flex-wrap items-center gap-2">
+                                                                    <Badge variant="outline">{assignment.assessment_type}</Badge>
+                                                                    <Badge>{assignment.period}</Badge>
+                                                                    <Badge variant="secondary">Points: {assignment.total_points}</Badge>
+                                                                    <span className="text-muted-foreground flex items-center text-xs">
+                                                                        <Clock className="mr-1 h-3 w-3" />
+                                                                        Due: {new Date(assignment.due_date).toLocaleDateString()}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                            {userRole === 'teacher' && <ActionMenu assignment={assignment} />}
+                                                        </div>
+                                                        <CollapsibleContent className="mt-2">
+                                                            <p className="text-muted-foreground mt-2 text-sm">{assignment.description}</p>
+                                                            {userRole === 'student' &&
+                                                                classDetails.students
+                                                                    .find((s) => s.user_id === auth.user.id)
+                                                                    ?.submissions?.find((sub) => sub.assignment_id === assignment.id)?.feedback && (
+                                                                    <div className="mt-4 border-t pt-2">
+                                                                        <p className="text-muted-foreground text-sm font-medium">Feedback:</p>
+                                                                        <p className="text-muted-foreground text-sm">
+                                                                            {
+                                                                                classDetails.students
+                                                                                    .find((s) => s.user_id === auth.user.id)
+                                                                                    .submissions.find((sub) => sub.assignment_id === assignment.id)
+                                                                                    .feedback
+                                                                            }
+                                                                        </p>
+                                                                    </div>
+                                                                )}
+                                                        </CollapsibleContent>
+                                                    </div>
+                                                </Collapsible>
+                                            ))
                                     ) : (
-                                        <p className="text-muted-foreground py-4 text-center">No assignments yet.</p>
+                                        <p className="text-muted-foreground py-4 text-center">No assignments found.</p>
+                                    )}
+
+                                    {!showAllAssignments && filteredAssignments('Assignment').length > 5 && (
+                                        <Button variant="outline" className="mt-2 w-full" onClick={() => setShowAllAssignments(true)}>
+                                            Show All ({filteredAssignments('Assignment').length})
+                                        </Button>
                                     )}
                                 </div>
                             </TabsContent>
 
                             <TabsContent value="quizzes">
-                                <div className="divide-y">
-                                    {filterAssignmentsByType('Quiz').length > 0 ? (
-                                        filterAssignmentsByType('Quiz').map((assignment) => (
-                                            <div key={assignment.id} className="py-4 first:pt-0 last:pb-0">
-                                                <AssessmentCard
-                                                    assignment={assignment}
-                                                    userRole={userRole}
-                                                    currentStudent={
-                                                        userRole === 'student' ? classDetails.students.find((s) => s.user_id === auth.user.id) : null
-                                                    }
-                                                />
-                                            </div>
-                                        ))
+                                {/* Similar structure as assignments tab */}
+                                <div className="mb-4 flex items-center justify-between">
+                                    <div className="text-muted-foreground">Showing {filterAssignmentsByType('Quiz').length} quizzes</div>
+                                    <div className="flex items-center gap-2">
+                                        <Input
+                                            placeholder="Search quizzes..."
+                                            className="w-60"
+                                            value={assignmentSearch}
+                                            onChange={(e) => setAssignmentSearch(e.target.value)}
+                                        />
+                                        <Button variant="outline" size="sm" onClick={() => setShowAllAssignments(!showAllAssignments)}>
+                                            {showAllAssignments ? 'Show Recent' : 'Show All'}
+                                        </Button>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-4">
+                                    {filteredAssignments('Quiz').length > 0 ? (
+                                        filteredAssignments('Quiz')
+                                            .slice(0, showAllAssignments ? undefined : 5)
+                                            .map((assignment) => (
+                                                <Collapsible key={assignment.id} className="rounded-md border">
+                                                    {/* Similar structure as in assignments tab */}
+                                                    <div className="p-4">
+                                                        <div className="flex items-start justify-between">
+                                                            <div>
+                                                                <CollapsibleTrigger className="cursor-pointer text-left hover:underline">
+                                                                    <h4 className="font-medium">{assignment.title}</h4>
+                                                                </CollapsibleTrigger>
+                                                                <div className="mt-2 flex flex-wrap items-center gap-2">
+                                                                    <Badge variant="outline">{assignment.assessment_type}</Badge>
+                                                                    <Badge>{assignment.period}</Badge>
+                                                                    <Badge variant="secondary">Points: {assignment.total_points}</Badge>
+                                                                    <span className="text-muted-foreground flex items-center text-xs">
+                                                                        <Clock className="mr-1 h-3 w-3" />
+                                                                        Due: {new Date(assignment.due_date).toLocaleDateString()}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                            {userRole === 'teacher' && <ActionMenu assignment={assignment} />}
+                                                        </div>
+                                                        <CollapsibleContent className="mt-2">
+                                                            <p className="text-muted-foreground mt-2 text-sm">{assignment.description}</p>
+                                                            {userRole === 'student' &&
+                                                                classDetails.students
+                                                                    .find((s) => s.user_id === auth.user.id)
+                                                                    ?.submissions?.find((sub) => sub.assignment_id === assignment.id)?.feedback && (
+                                                                    <div className="mt-4 border-t pt-2">
+                                                                        <p className="text-muted-foreground text-sm font-medium">Feedback:</p>
+                                                                        <p className="text-muted-foreground text-sm">
+                                                                            {
+                                                                                classDetails.students
+                                                                                    .find((s) => s.user_id === auth.user.id)
+                                                                                    .submissions.find((sub) => sub.assignment_id === assignment.id)
+                                                                                    .feedback
+                                                                            }
+                                                                        </p>
+                                                                    </div>
+                                                                )}
+                                                        </CollapsibleContent>
+                                                    </div>
+                                                </Collapsible>
+                                            ))
                                     ) : (
-                                        <p className="text-muted-foreground py-4 text-center">No quizzes yet.</p>
+                                        <p className="text-muted-foreground py-4 text-center">No quizzes found.</p>
+                                    )}
+
+                                    {!showAllAssignments && filteredAssignments('Quiz').length > 5 && (
+                                        <Button variant="outline" className="mt-2 w-full" onClick={() => setShowAllAssignments(true)}>
+                                            Show All ({filteredAssignments('Quiz').length})
+                                        </Button>
                                     )}
                                 </div>
                             </TabsContent>
 
                             <TabsContent value="exams">
-                                <div className="divide-y">
-                                    {filterAssignmentsByType('Exam').length > 0 ? (
-                                        filterAssignmentsByType('Exam').map((assignment) => (
-                                            <div key={assignment.id} className="py-4 first:pt-0 last:pb-0">
-                                                <AssessmentCard
-                                                    assignment={assignment}
-                                                    userRole={userRole}
-                                                    currentStudent={
-                                                        userRole === 'student' ? classDetails.students.find((s) => s.user_id === auth.user.id) : null
-                                                    }
-                                                />
-                                            </div>
-                                        ))
+                                {/* Similar structure as assignments tab */}
+                                <div className="mb-4 flex items-center justify-between">
+                                    <div className="text-muted-foreground">Showing {filterAssignmentsByType('Exam').length} exams</div>
+                                    <div className="flex items-center gap-2">
+                                        <Input
+                                            placeholder="Search exams..."
+                                            className="w-60"
+                                            value={assignmentSearch}
+                                            onChange={(e) => setAssignmentSearch(e.target.value)}
+                                        />
+                                        <Button variant="outline" size="sm" onClick={() => setShowAllAssignments(!showAllAssignments)}>
+                                            {showAllAssignments ? 'Show Recent' : 'Show All'}
+                                        </Button>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-4">
+                                    {filteredAssignments('Exam').length > 0 ? (
+                                        filteredAssignments('Exam')
+                                            .slice(0, showAllAssignments ? undefined : 5)
+                                            .map((assignment) => (
+                                                <Collapsible key={assignment.id} className="rounded-md border">
+                                                    {/* Similar structure as in assignments tab */}
+                                                    <div className="p-4">
+                                                        <div className="flex items-start justify-between">
+                                                            <div>
+                                                                <CollapsibleTrigger className="cursor-pointer text-left hover:underline">
+                                                                    <h4 className="font-medium">{assignment.title}</h4>
+                                                                </CollapsibleTrigger>
+                                                                <div className="mt-2 flex flex-wrap items-center gap-2">
+                                                                    <Badge variant="outline">{assignment.assessment_type}</Badge>
+                                                                    <Badge>{assignment.period}</Badge>
+                                                                    <Badge variant="secondary">Points: {assignment.total_points}</Badge>
+                                                                    <span className="text-muted-foreground flex items-center text-xs">
+                                                                        <Clock className="mr-1 h-3 w-3" />
+                                                                        Due: {new Date(assignment.due_date).toLocaleDateString()}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                            {userRole === 'teacher' && <ActionMenu assignment={assignment} />}
+                                                        </div>
+                                                        <CollapsibleContent className="mt-2">
+                                                            <p className="text-muted-foreground mt-2 text-sm">{assignment.description}</p>
+                                                            {userRole === 'student' &&
+                                                                classDetails.students
+                                                                    .find((s) => s.user_id === auth.user.id)
+                                                                    ?.submissions?.find((sub) => sub.assignment_id === assignment.id)?.feedback && (
+                                                                    <div className="mt-4 border-t pt-2">
+                                                                        <p className="text-muted-foreground text-sm font-medium">Feedback:</p>
+                                                                        <p className="text-muted-foreground text-sm">
+                                                                            {
+                                                                                classDetails.students
+                                                                                    .find((s) => s.user_id === auth.user.id)
+                                                                                    .submissions.find((sub) => sub.assignment_id === assignment.id)
+                                                                                    .feedback
+                                                                            }
+                                                                        </p>
+                                                                    </div>
+                                                                )}
+                                                        </CollapsibleContent>
+                                                    </div>
+                                                </Collapsible>
+                                            ))
                                     ) : (
-                                        <p className="text-muted-foreground py-4 text-center">No exams yet.</p>
+                                        <p className="text-muted-foreground py-4 text-center">No exams found.</p>
+                                    )}
+
+                                    {!showAllAssignments && filteredAssignments('Exam').length > 5 && (
+                                        <Button variant="outline" className="mt-2 w-full" onClick={() => setShowAllAssignments(true)}>
+                                            Show All ({filteredAssignments('Exam').length})
+                                        </Button>
                                     )}
                                 </div>
                             </TabsContent>
@@ -745,14 +821,20 @@ function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsPagePro
                     </CardContent>
                 </Card>
 
-                {/* Students Section */}
+                {/* Students Section - Modify to have a different heading for students */}
                 <Card>
                     <CardHeader>
                         <div className="flex items-center justify-between">
-                            <CardTitle>Students</CardTitle>
-                            <Badge variant="secondary">
-                                {classDetails.students.length} {classDetails.students.length === 1 ? 'Student' : 'Students'}
-                            </Badge>
+                            {userRole === 'teacher' ? (
+                                <>
+                                    <CardTitle>Students</CardTitle>
+                                    <Badge variant="secondary">
+                                        {classDetails.students.length} {classDetails.students.length === 1 ? 'Student' : 'Students'}
+                                    </Badge>
+                                </>
+                            ) : (
+                                <></>
+                            )}
                         </div>
                     </CardHeader>
                     <CardContent>
@@ -832,7 +914,7 @@ function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsPagePro
 
                                 <div className="grid gap-2">
                                     <Label htmlFor="period">Period</Label>
-                                    <Select value={data.period} onValueChange={(value) => setData('period', value)}>
+                                    <Select value={data.period} onValueChange={handlePeriodChange}>
                                         <SelectTrigger className={errors.period ? 'border-red-500' : ''}>
                                             <SelectValue placeholder="Select period" />
                                         </SelectTrigger>
@@ -925,6 +1007,79 @@ function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsPagePro
                                 </TabsContent>
 
                                 {/* Similar content for quizzes and exams tabs */}
+                                <TabsContent value="quizzes">
+                                    {filterAssignmentsByType('Quiz').map((assignment) => (
+                                        <div key={assignment.id} className="mb-4 space-y-4 border-b pb-4">
+                                            <h4 className="font-medium">{assignment.title}</h4>
+                                            <div className="grid gap-4">
+                                                <div className="grid gap-2">
+                                                    <Label>Grade (out of {assignment.total_points})</Label>
+                                                    <Input
+                                                        type="number"
+                                                        min="0"
+                                                        max={assignment.total_points}
+                                                        value={gradingData.grade}
+                                                        onChange={(e) => {
+                                                            setGradingData({
+                                                                ...gradingData,
+                                                                assignment_id: assignment.id,
+                                                                grade: e.target.value,
+                                                            });
+                                                        }}
+                                                    />
+                                                </div>
+                                                <div className="grid gap-2">
+                                                    <Label>Feedback</Label>
+                                                    <Textarea
+                                                        value={gradingData.feedback}
+                                                        onChange={(e) => setGradingData('feedback', e.target.value)}
+                                                        placeholder="Optional feedback for the student"
+                                                    />
+                                                </div>
+                                                <Button onClick={handleGradeSubmit} disabled={gradingProcessing}>
+                                                    Submit Grade
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </TabsContent>
+
+                                <TabsContent value="exams">
+                                    {filterAssignmentsByType('Exam').map((assignment) => (
+                                        <div key={assignment.id} className="mb-4 space-y-4 border-b pb-4">
+                                            <h4 className="font-medium">{assignment.title}</h4>
+                                            <div className="grid gap-4">
+                                                <div className="grid gap-2">
+                                                    <Label>Grade (out of {assignment.total_points})</Label>
+                                                    <Input
+                                                        type="number"
+                                                        min="0"
+                                                        max={assignment.total_points}
+                                                        value={gradingData.grade}
+                                                        onChange={(e) => {
+                                                            setGradingData({
+                                                                ...gradingData,
+                                                                assignment_id: assignment.id,
+                                                                grade: e.target.value,
+                                                            });
+                                                        }}
+                                                    />
+                                                </div>
+                                                <div className="grid gap-2">
+                                                    <Label>Feedback</Label>
+                                                    <Textarea
+                                                        value={gradingData.feedback}
+                                                        onChange={(e) => setGradingData('feedback', e.target.value)}
+                                                        placeholder="Optional feedback for the student"
+                                                    />
+                                                </div>
+                                                <Button onClick={handleGradeSubmit} disabled={gradingProcessing}>
+                                                    Submit Grade
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </TabsContent>
                             </Tabs>
                         </DialogContent>
                     </Dialog>
@@ -952,94 +1107,5 @@ function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsPagePro
         </AppLayout>
     );
 }
-
-const calculateGradeByPeriodAndType = (submissions, period: string, type: string) => {
-    if (!submissions?.length) return 0;
-    // ...rest of the function without console.logs
-    const filteredSubmissions = submissions.filter((submission) => {
-        return submission.grade && submission.assignment && submission.assignment.period === period && submission.assignment.assessment_type === type;
-    });
-
-    if (!filteredSubmissions.length) {
-        return 0;
-    }
-
-    const sum = filteredSubmissions.reduce((acc, submission) => {
-        const percentage = (submission.grade / submission.assignment.total_points) * 100;
-        return acc + percentage;
-    }, 0);
-
-    const average = (sum / filteredSubmissions.length).toFixed(1);
-    return average;
-};
-
-// Update the calculatePeriodAverage function to accept weights parameter
-const calculatePeriodAverage = (submissions, period: string, weights: GradeWeights) => {
-    if (!submissions?.length) return 0;
-
-    const types = ['Assignment', 'Quiz', 'Exam'];
-    let weightedSum = 0;
-    let totalWeight = 0;
-
-    types.forEach((type) => {
-        const grade = parseFloat(calculateGradeByPeriodAndType(submissions, period, type));
-        if (!isNaN(grade) && grade > 0) {
-            weightedSum += grade * (weights[type] / 100);
-            totalWeight += weights[type] / 100;
-        }
-    });
-
-    if (totalWeight === 0) return 0;
-    return (weightedSum / totalWeight).toFixed(1);
-};
-
-const calculateOverallGrade = (submissions, weights: GradeWeights) => {
-    if (!submissions?.length) return 0;
-
-    const periods = ['Prelims', 'Midterms', 'Finals'];
-    const validPeriodGrades = periods
-        .map((period) => {
-            const average = parseFloat(calculatePeriodAverage(submissions, period, weights));
-            return isNaN(average) || average === 0 ? null : average;
-        })
-        .filter((grade) => grade !== null);
-
-    if (!validPeriodGrades.length) return 0;
-
-    const sum = validPeriodGrades.reduce((a, b) => a + b, 0);
-    return (sum / validPeriodGrades.length).toFixed(1);
-};
-
-// Update the StudentGrades component to accept weights prop
-const StudentGrades = ({ student, weights }: { student: any; weights: GradeWeights }) => {
-    return (
-        <>
-            <div className="mb-2 flex items-center justify-between">
-                <div>
-                    <p className="font-medium capitalize">{student.name}</p>
-                    <p className="text-muted-foreground text-sm">{student.student_number}</p>
-                </div>
-                <div className="text-right">
-                    <p className="text-lg font-bold">Overall: {calculateOverallGrade(student.submissions, weights)}%</p>
-                </div>
-            </div>
-            <div className="mt-4 grid gap-4">
-                {['Prelims', 'Midterms', 'Finals'].map((period) => (
-                    <div key={period} className="space-y-2">
-                        <div className="flex items-center justify-between">
-                            <h4 className="font-medium">{period}</h4>
-                            <Badge>{calculatePeriodAverage(student.submissions, period, weights)}%</Badge>
-                        </div>
-                        <div className="flex gap-2">
-                            <Badge variant="outline">Assignments: {calculateGradeByPeriodAndType(student.submissions, period, 'Assignment')}%</Badge>
-                            <Badge variant="outline">Quizzes: {calculateGradeByPeriodAndType(student.submissions, period, 'Quiz')}%</Badge>
-                            <Badge variant="outline">Exams: {calculateGradeByPeriodAndType(student.submissions, period, 'Exam')}%</Badge>
-                        </div>
-                    </div>
-                ))}
-            </div>
-        </>
-    );
-};
 
 export default ClassDetailsPage;
