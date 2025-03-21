@@ -313,20 +313,41 @@ class ScheduleController extends Controller
     {
         $schedule = Schedule::with([
             'subject',
-            'subject.assignments',
+            'subject.assignments' => function ($query) use ($id) {
+                // Only get assignments for this specific schedule
+                $query->where('schedule_id', $id);
+            },
             'room.building',
             'course',
             'students.user',
-            'students.submissions.assignment' // Add this relationship loading
-        ])
-            ->findOrFail($id);
+            'students.submissions' => function ($query) use ($id) {
+                // Filter submissions by joining with assignments table
+                $query->whereHas('assignment', function ($q) use ($id) {
+                    $q->where('schedule_id', $id);
+                })->with(['assignment' => function ($q) use ($id) {
+                    $q->where('schedule_id', $id);
+                }]);
+            }
+        ])->findOrFail($id);
 
         $userRole = auth()->user()->employee ? 'teacher' : 'student';
+        $currentUserId = auth()->id();
 
-        $students = $schedule->students()->with(['user', 'submissions.assignment'])->get()
+        $students = $schedule->students()->with([
+            'user',
+            'submissions' => function ($query) use ($id) {
+                // Same filtering for the students' submissions
+                $query->whereHas('assignment', function ($q) use ($id) {
+                    $q->where('schedule_id', $id);
+                })->with(['assignment' => function ($q) use ($id) {
+                    $q->where('schedule_id', $id);
+                }]);
+            }
+        ])->get()
             ->map(function ($student) {
                 return [
                     'id' => $student->id,
+                    'user_id' => $student->user->id, // Add user_id
                     'name' => $student->user->name,
                     'student_number' => $student->student_number,
                     'submissions' => $student->submissions->map(function ($submission) {
@@ -348,7 +369,10 @@ class ScheduleController extends Controller
 
         return Inertia::render('class-details', [
             'class' => array_merge($schedule->toArray(), ['students' => $students]),
-            'userRole' => $userRole // Add userRole here
+            'userRole' => $userRole,
+            'auth' => [
+                'user' => auth()->user() // Make sure to include full user data
+            ]
         ]);
     }
 }

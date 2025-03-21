@@ -21,8 +21,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/app-layout';
-import type { BreadcrumbItem } from '@/types';
-import { Head, router, useForm } from '@inertiajs/react';
+import type { BreadcrumbItem, SharedData } from '@/types';
+import { Head, router, useForm, usePage } from '@inertiajs/react';
 import { Calendar, Clock, GraduationCap, Home, MoreHorizontal, Pencil, Plus, Trash, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast, Toaster } from 'sonner';
@@ -81,8 +81,7 @@ interface ClassDetailsPageProps {
 }
 
 function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsPageProps) {
-    // Add this debug log at the start of the component
-    console.log('Component props:', { classDetails, userRole });
+    const { auth } = usePage<SharedData>().props;
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingAssignment, setEditingAssignment] = useState<null | any>(null);
@@ -274,6 +273,64 @@ function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsPagePro
         );
     };
 
+    // Update the assessment card sections to show grades for students
+    const AssessmentCard = ({ assignment, userRole, currentStudent = null }) => {
+        const studentSubmission = currentStudent?.submissions?.find((sub) => sub.assignment_id === assignment.id);
+
+        return (
+            <div className="flex items-start justify-between">
+                <div>
+                    <h4 className="font-medium">{assignment.title}</h4>
+                    <p className="text-muted-foreground mt-1 text-sm">{assignment.description}</p>
+                    <div className="mt-2 flex items-center gap-4">
+                        <Badge variant="outline">{assignment.assessment_type}</Badge>
+                        <Badge>{assignment.period}</Badge>
+                        {studentSubmission?.grade ? (
+                            <Badge variant="secondary">
+                                Score: {studentSubmission.grade}/{assignment.total_points}
+                            </Badge>
+                        ) : (
+                            <Badge variant="secondary">Points: {assignment.total_points}</Badge>
+                        )}
+                        <span className="text-muted-foreground flex items-center text-xs">
+                            <Clock className="mr-1 h-3 w-3" />
+                            Due: {new Date(assignment.due_date).toLocaleDateString()}
+                        </span>
+                    </div>
+                    {studentSubmission?.feedback && <p className="text-muted-foreground mt-2 text-sm">Feedback: {studentSubmission.feedback}</p>}
+                </div>
+                {userRole === 'teacher' && <ActionMenu assignment={assignment} />}
+            </div>
+        );
+    };
+
+    // Update the Students section to only show current student's grades for student users
+    const StudentSection = ({ students, userRole, currentUserId }) => {
+        if (userRole === 'student') {
+            const currentStudent = students.find((student) => student.user_id === currentUserId);
+            if (!currentStudent) return null;
+
+            return (
+                <div className="divide-y">
+                    <div key={currentStudent.id} className="py-4">
+                        {/* Show only current student's grades */}
+                        <StudentGrades student={currentStudent} />
+                    </div>
+                </div>
+            );
+        }
+
+        return (
+            <div className="divide-y">
+                {students.map((student) => (
+                    <div key={student.id} className="py-4">
+                        <StudentGrades student={student} />
+                    </div>
+                ))}
+            </div>
+        );
+    };
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`${classDetails.subject.code}`} />
@@ -357,38 +414,17 @@ function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsPagePro
                             <TabsContent value="assignments">
                                 <div className="divide-y">
                                     {filterAssignmentsByType('Assignment').length > 0 ? (
-                                        filterAssignmentsByType('Assignment').map((assignment) => {
-                                            console.log('Rendering assignment with full details:', {
-                                                assignment,
-                                                userRole,
-                                                shouldShowMenu: userRole === 'teacher',
-                                            });
-                                            return (
-                                                <div key={assignment.id} className="py-4 first:pt-0 last:pb-0">
-                                                    <div className="flex items-start justify-between">
-                                                        <div>
-                                                            <h4 className="font-medium">{assignment.title}</h4>
-                                                            <p className="text-muted-foreground mt-1 text-sm">{assignment.description}</p>
-                                                            <div className="mt-2 flex items-center gap-4">
-                                                                <Badge variant="outline">{assignment.assessment_type}</Badge>
-                                                                <Badge>{assignment.period}</Badge>
-                                                                <Badge variant="secondary">Points: {assignment.total_points}</Badge>
-                                                                <span className="text-muted-foreground flex items-center text-xs">
-                                                                    <Clock className="mr-1 h-3 w-3" />
-                                                                    Due: {new Date(assignment.due_date).toLocaleDateString()}
-                                                                </span>
-                                                            </div>
-                                                        </div>
-                                                        {userRole === 'teacher' && (
-                                                            <>
-                                                                {console.log('Rendering ActionMenu for:', assignment.title)}
-                                                                <ActionMenu assignment={assignment} />
-                                                            </>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            );
-                                        })
+                                        filterAssignmentsByType('Assignment').map((assignment) => (
+                                            <div key={assignment.id} className="py-4 first:pt-0 last:pb-0">
+                                                <AssessmentCard
+                                                    assignment={assignment}
+                                                    userRole={userRole}
+                                                    currentStudent={
+                                                        userRole === 'student' ? classDetails.students.find((s) => s.user_id === auth.user.id) : null
+                                                    }
+                                                />
+                                            </div>
+                                        ))
                                     ) : (
                                         <p className="text-muted-foreground py-4 text-center">No assignments yet.</p>
                                     )}
@@ -400,22 +436,13 @@ function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsPagePro
                                     {filterAssignmentsByType('Quiz').length > 0 ? (
                                         filterAssignmentsByType('Quiz').map((assignment) => (
                                             <div key={assignment.id} className="py-4 first:pt-0 last:pb-0">
-                                                <div className="flex items-start justify-between">
-                                                    <div>
-                                                        <h4 className="font-medium">{assignment.title}</h4>
-                                                        <p className="text-muted-foreground mt-1 text-sm">{assignment.description}</p>
-                                                        <div className="mt-2 flex items-center gap-4">
-                                                            <Badge variant="outline">{assignment.assessment_type}</Badge>
-                                                            <Badge>{assignment.period}</Badge>
-                                                            <Badge variant="secondary">Points: {assignment.total_points}</Badge>
-                                                            <span className="text-muted-foreground flex items-center text-xs">
-                                                                <Clock className="mr-1 h-3 w-3" />
-                                                                Due: {new Date(assignment.due_date).toLocaleDateString()}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                    {userRole === 'teacher' && <ActionMenu assignment={assignment} />}
-                                                </div>
+                                                <AssessmentCard
+                                                    assignment={assignment}
+                                                    userRole={userRole}
+                                                    currentStudent={
+                                                        userRole === 'student' ? classDetails.students.find((s) => s.user_id === auth.user.id) : null
+                                                    }
+                                                />
                                             </div>
                                         ))
                                     ) : (
@@ -429,22 +456,13 @@ function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsPagePro
                                     {filterAssignmentsByType('Exam').length > 0 ? (
                                         filterAssignmentsByType('Exam').map((assignment) => (
                                             <div key={assignment.id} className="py-4 first:pt-0 last:pb-0">
-                                                <div className="flex items-start justify-between">
-                                                    <div>
-                                                        <h4 className="font-medium">{assignment.title}</h4>
-                                                        <p className="text-muted-foreground mt-1 text-sm">{assignment.description}</p>
-                                                        <div className="mt-2 flex items-center gap-4">
-                                                            <Badge variant="outline">{assignment.assessment_type}</Badge>
-                                                            <Badge>{assignment.period}</Badge>
-                                                            <Badge variant="secondary">Points: {assignment.total_points}</Badge>
-                                                            <span className="text-muted-foreground flex items-center text-xs">
-                                                                <Clock className="mr-1 h-3 w-3" />
-                                                                Due: {new Date(assignment.due_date).toLocaleDateString()}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                    {userRole === 'teacher' && <ActionMenu assignment={assignment} />}
-                                                </div>
+                                                <AssessmentCard
+                                                    assignment={assignment}
+                                                    userRole={userRole}
+                                                    currentStudent={
+                                                        userRole === 'student' ? classDetails.students.find((s) => s.user_id === auth.user.id) : null
+                                                    }
+                                                />
                                             </div>
                                         ))
                                     ) : (
@@ -467,49 +485,7 @@ function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsPagePro
                         </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="divide-y">
-                            {classDetails.students.length > 0 ? (
-                                classDetails.students.map((student) => {
-                                    return (
-                                        <div key={student.id} className="py-4">
-                                            <div className="mb-2 flex items-center justify-between">
-                                                <div>
-                                                    <p className="font-medium capitalize">{student.name}</p>
-                                                    <p className="text-muted-foreground text-sm">{student.student_number}</p>
-                                                </div>
-                                                <div className="text-right">
-                                                    <p className="text-lg font-bold">Overall: {calculateOverallGrade(student.submissions)}%</p>
-                                                </div>
-                                            </div>
-                                            <div className="mt-4 grid gap-4">
-                                                {['Prelims', 'Midterms', 'Finals'].map((period) => (
-                                                    <div key={period} className="space-y-2">
-                                                        <div className="flex items-center justify-between">
-                                                            <h4 className="font-medium">{period}</h4>
-                                                            <Badge>{calculatePeriodAverage(student.submissions, period)}%</Badge>
-                                                        </div>
-                                                        <div className="flex gap-2">
-                                                            <Badge variant="outline">
-                                                                Assignments:{' '}
-                                                                {calculateGradeByPeriodAndType(student.submissions, period, 'Assignment')}%
-                                                            </Badge>
-                                                            <Badge variant="outline">
-                                                                Quizzes: {calculateGradeByPeriodAndType(student.submissions, period, 'Quiz')}%
-                                                            </Badge>
-                                                            <Badge variant="outline">
-                                                                Exams: {calculateGradeByPeriodAndType(student.submissions, period, 'Exam')}%
-                                                            </Badge>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    );
-                                })
-                            ) : (
-                                <p className="text-muted-foreground py-4 text-center">No students enrolled yet.</p>
-                            )}
-                        </div>
+                        <StudentSection students={classDetails.students} userRole={userRole} currentUserId={auth.user.id} />
                     </CardContent>
                 </Card>
 
@@ -772,6 +748,37 @@ const calculateOverallGrade = (submissions) => {
     const overall = (sum / validPeriodGrades.length).toFixed(1);
     console.log('Final overall grade:', overall);
     return overall;
+};
+
+const StudentGrades = ({ student }) => {
+    return (
+        <>
+            <div className="mb-2 flex items-center justify-between">
+                <div>
+                    <p className="font-medium capitalize">{student.name}</p>
+                    <p className="text-muted-foreground text-sm">{student.student_number}</p>
+                </div>
+                <div className="text-right">
+                    <p className="text-lg font-bold">Overall: {calculateOverallGrade(student.submissions)}%</p>
+                </div>
+            </div>
+            <div className="mt-4 grid gap-4">
+                {['Prelims', 'Midterms', 'Finals'].map((period) => (
+                    <div key={period} className="space-y-2">
+                        <div className="flex items-center justify-between">
+                            <h4 className="font-medium">{period}</h4>
+                            <Badge>{calculatePeriodAverage(student.submissions, period)}%</Badge>
+                        </div>
+                        <div className="flex gap-2">
+                            <Badge variant="outline">Assignments: {calculateGradeByPeriodAndType(student.submissions, period, 'Assignment')}%</Badge>
+                            <Badge variant="outline">Quizzes: {calculateGradeByPeriodAndType(student.submissions, period, 'Quiz')}%</Badge>
+                            <Badge variant="outline">Exams: {calculateGradeByPeriodAndType(student.submissions, period, 'Exam')}%</Badge>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </>
+    );
 };
 
 export default ClassDetailsPage;
