@@ -82,6 +82,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/my-classes/{id}', [ScheduleController::class, 'show'])->name('classes.show');
     Route::post('/assignments', [AssignmentController::class, 'store'])->name('assignments.store');
+    Route::post('/classes/{schedule}/weights', [ScheduleController::class, 'updateWeights'])->name('classes.weights.update');
 });
 
 // Assignment routes
@@ -93,6 +94,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('/assignment-submissions/{submission}', [AssignmentSubmissionController::class, 'update'])->name('assignment-submissions.update');
     Route::get('/assignments/{assignment}/grade', [AssignmentController::class, 'showGrading'])->name('assignments.grading');
     Route::post('/assignments/{assignment}/grades', [AssignmentController::class, 'submitGrades'])->name('assignments.submit-grades');
+
+    // Add this new route to get grade weights
+    Route::get('/api/classes/{schedule}/grade-weights', function (\App\Models\Schedule $schedule) {
+        $weights = $schedule->gradeWeights;
+        if (!$weights) {
+            return response()->json([
+                'assignment_weight' => 30,
+                'quiz_weight' => 30,
+                'exam_weight' => 40
+            ]);
+        }
+        return response()->json($weights);
+    });
 });
 
 require __DIR__ . '/settings.php';

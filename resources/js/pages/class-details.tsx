@@ -80,8 +80,50 @@ interface ClassDetailsPageProps {
     userRole: 'teacher' | 'student';
 }
 
+// Add this interface near the top with other interfaces
+interface GradeWeights {
+    Assignment: number;
+    Quiz: number;
+    Exam: number;
+}
+
 function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsPageProps) {
     const { auth } = usePage<SharedData>().props;
+
+    // Add comprehensive console logs to debug the issue
+    console.log('FULL CLASS DETAILS RESPONSE:', classDetails);
+    console.log('Does classDetails have grade_weights?', classDetails.hasOwnProperty('grade_weights'));
+
+    // Check if we need to fetch grade weights separately
+    const [gradeWeightsData, setGradeWeightsData] = useState(null);
+    const [isLoadingWeights, setIsLoadingWeights] = useState(false);
+
+    // Fetch grade weights if not already included in the response
+    useEffect(() => {
+        const fetchGradeWeights = async () => {
+            if (!classDetails.grade_weights) {
+                setIsLoadingWeights(true);
+                console.log('Grade weights not found in initial data, attempting to fetch separately...');
+
+                try {
+                    const response = await fetch(`/api/classes/${classDetails.id}/grade-weights`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        console.log('Fetched grade weights:', data);
+                        setGradeWeightsData(data);
+                    } else {
+                        console.error('Failed to fetch grade weights:', response.statusText);
+                    }
+                } catch (error) {
+                    console.error('Error fetching grade weights:', error);
+                } finally {
+                    setIsLoadingWeights(false);
+                }
+            }
+        };
+
+        fetchGradeWeights();
+    }, [classDetails.id]);
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingAssignment, setEditingAssignment] = useState<null | any>(null);
@@ -89,6 +131,50 @@ function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsPagePro
     const [assignmentToDelete, setAssignmentToDelete] = useState<null | any>(null);
     const [isGradingModalOpen, setIsGradingModalOpen] = useState(false);
     const [selectedStudent, setSelectedStudent] = useState(null);
+
+    const [isWeightsModalOpen, setIsWeightsModalOpen] = useState(false);
+
+    // Get weights from either the classDetails or the separately fetched data
+    const getWeightsFromData = () => {
+        if (classDetails.grade_weights) {
+            console.log('Using grade_weights from classDetails:', classDetails.grade_weights);
+            return {
+                Assignment: classDetails.grade_weights.assignment_weight,
+                Quiz: classDetails.grade_weights.quiz_weight,
+                Exam: classDetails.grade_weights.exam_weight,
+            };
+        }
+
+        if (gradeWeightsData) {
+            console.log('Using separately fetched grade weights:', gradeWeightsData);
+            return {
+                Assignment: gradeWeightsData.assignment_weight,
+                Quiz: gradeWeightsData.quiz_weight,
+                Exam: gradeWeightsData.exam_weight,
+            };
+        }
+
+        console.log('Using default weights');
+        return {
+            Assignment: 30,
+            Quiz: 30,
+            Exam: 40,
+        };
+    };
+
+    const [weights, setWeights] = useState<GradeWeights>(getWeightsFromData());
+
+    // Update weights when gradeWeightsData changes
+    useEffect(() => {
+        if (gradeWeightsData) {
+            console.log('Updating weights from fetched data');
+            setWeights({
+                Assignment: gradeWeightsData.assignment_weight,
+                Quiz: gradeWeightsData.quiz_weight,
+                Exam: gradeWeightsData.exam_weight,
+            });
+        }
+    }, [gradeWeightsData]);
 
     const { data, setData, post, put, processing, errors, reset } = useForm({
         title: '',
@@ -207,7 +293,6 @@ function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsPagePro
 
     const filterAssignmentsByType = (type: string) => {
         const assignments = classDetails.subject.assignments?.filter((assignment) => assignment.assessment_type === type) || [];
-        console.log('Filtered assignments:', assignments, 'userRole:', userRole);
         return assignments;
     };
 
@@ -238,8 +323,6 @@ function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsPagePro
     };
 
     const ActionMenu = ({ assignment }) => {
-        console.log('ActionMenu props:', assignment); // Keep this
-        console.log('Current userRole:', userRole); // Add this to check userRole
         return (
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -271,6 +354,40 @@ function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsPagePro
                 </DropdownMenuContent>
             </DropdownMenu>
         );
+    };
+
+    // Add this new function to handle weights update
+    const handleWeightsSubmit = () => {
+        const total = weights.Assignment + weights.Quiz + weights.Exam;
+        if (total !== 100) {
+            toast.error('Weights must sum to 100%');
+            return;
+        }
+
+        console.log('Submitting weights to server:', weights);
+        router.post(`/classes/${classDetails.id}/weights`, weights, {
+            preserveScroll: true,
+            onSuccess: (response) => {
+                console.log('Weight update response:', response);
+                setIsWeightsModalOpen(false);
+                toast.success('Grade weights updated successfully');
+
+                // Try to fetch updated weights
+                fetch(`/api/classes/${classDetails.id}/grade-weights`)
+                    .then((res) => res.json())
+                    .then((data) => {
+                        console.log('Refreshed grade weights after update:', data);
+                        setGradeWeightsData(data);
+                    })
+                    .catch((err) => {
+                        console.error('Failed to refresh weights:', err);
+                    });
+            },
+            onError: (errors) => {
+                console.error('Weight update errors:', errors);
+                toast.error('Failed to update grade weights');
+            },
+        });
     };
 
     // Update the assessment card sections to show grades for students
@@ -305,7 +422,7 @@ function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsPagePro
     };
 
     // Update the Students section to only show current student's grades for student users
-    const StudentSection = ({ students, userRole, currentUserId }) => {
+    const StudentSection = ({ students, userRole, currentUserId, weights }) => {
         if (userRole === 'student') {
             const currentStudent = students.find((student) => student.user_id === currentUserId);
             if (!currentStudent) return null;
@@ -314,7 +431,7 @@ function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsPagePro
                 <div className="divide-y">
                     <div key={currentStudent.id} className="py-4">
                         {/* Show only current student's grades */}
-                        <StudentGrades student={currentStudent} />
+                        <StudentGrades student={currentStudent} weights={weights} />
                     </div>
                 </div>
             );
@@ -324,9 +441,156 @@ function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsPagePro
             <div className="divide-y">
                 {students.map((student) => (
                     <div key={student.id} className="py-4">
-                        <StudentGrades student={student} />
+                        <StudentGrades student={student} weights={weights} />
                     </div>
                 ))}
+            </div>
+        );
+    };
+
+    // Update the weights state handler to prevent re-renders
+    const handleWeightChange = (type: string, value: string) => {
+        const numValue = parseInt(value) || 0;
+        setWeights((prev) => ({
+            ...prev,
+            [type]: numValue,
+        }));
+    };
+
+    // Update the WeightsModal component to prevent focus loss on typing
+    const WeightsModal = () => {
+        if (!isWeightsModalOpen) return null;
+
+        console.log('WEIGHTS MODAL OPENED');
+        console.log('Current weights in state:', weights);
+        console.log('Grade weights from classDetails:', classDetails.grade_weights);
+        console.log('Grade weights from separate fetch:', gradeWeightsData);
+
+        // Create a separate state for the modal inputs to avoid modifying parent state while typing
+        const [modalWeights, setModalWeights] = useState({
+            Assignment: weights.Assignment,
+            Quiz: weights.Quiz,
+            Exam: weights.Exam,
+        });
+
+        // This component manages its own state entirely with string values to prevent focus loss
+        const WeightInput = ({ type }) => {
+            // Use string values in state to maintain input field values during typing
+            const [localValue, setLocalValue] = useState(modalWeights[type].toString());
+
+            // Update the parent modalWeights state only when focus is lost or Enter is pressed
+            const updateParentState = () => {
+                const numValue = parseInt(localValue) || 0;
+                setModalWeights((prev) => ({
+                    ...prev,
+                    [type]: numValue,
+                }));
+            };
+
+            return (
+                <div className="grid gap-2">
+                    <Label htmlFor={`weight-${type}`}>{type}</Label>
+                    <div className="flex items-center gap-2">
+                        <Input
+                            id={`weight-${type}`}
+                            type="number"
+                            min="0"
+                            max="100"
+                            value={localValue}
+                            onChange={(e) => {
+                                // Only update the local input value, not the parent state
+                                setLocalValue(e.target.value);
+                            }}
+                            // Only update parent state on blur or Enter key
+                            onBlur={updateParentState}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    updateParentState();
+                                    // Move focus to the next input or submit button
+                                    const form = e.currentTarget.form;
+                                    if (form) {
+                                        const index = Array.from(form.elements).indexOf(e.currentTarget);
+                                        if (index !== -1 && form.elements[index + 1]) {
+                                            (form.elements[index + 1] as HTMLElement).focus();
+                                        }
+                                    }
+                                }
+                            }}
+                        />
+                        <span>%</span>
+                    </div>
+                </div>
+            );
+        };
+
+        // Save changes only when the Save button is clicked
+        const handleSaveChanges = () => {
+            const total = modalWeights.Assignment + modalWeights.Quiz + modalWeights.Exam;
+            if (total !== 100) {
+                toast.error('Weights must sum to 100%');
+                return;
+            }
+
+            console.log('Submitting weights to server:', modalWeights);
+
+            // Update the parent state once when saving
+            setWeights(modalWeights);
+
+            // Submit to server
+            router.post(`/classes/${classDetails.id}/weights`, modalWeights, {
+                preserveScroll: true,
+                onSuccess: (response) => {
+                    console.log('Weight update response:', response);
+                    setIsWeightsModalOpen(false);
+                    toast.success('Grade weights updated successfully');
+                },
+                onError: (errors) => {
+                    console.error('Weight update errors:', errors);
+                    toast.error('Failed to update grade weights');
+                },
+            });
+        };
+
+        // Handle closing the modal when clicking the backdrop
+        const handleBackdropClick = (e) => {
+            if (e.target === e.currentTarget) {
+                setIsWeightsModalOpen(false);
+            }
+        };
+
+        return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={handleBackdropClick}>
+                <div className="bg-background w-full max-w-md rounded-lg p-6 shadow-lg" onClick={(e) => e.stopPropagation()}>
+                    <div className="mb-4">
+                        <h2 className="text-xl font-bold">Grade Weights</h2>
+                        <p className="text-muted-foreground text-sm">
+                            Adjust the weight percentages for each assessment type. Total must equal 100%.
+                        </p>
+                    </div>
+
+                    {/* Add a form element to enable proper Enter key navigation */}
+                    <form
+                        onSubmit={(e) => {
+                            e.preventDefault();
+                            handleSaveChanges();
+                        }}
+                    >
+                        <div className="grid gap-4 py-4">
+                            {Object.keys(modalWeights).map((type) => (
+                                <WeightInput key={type} type={type} />
+                            ))}
+                            <div className="text-muted-foreground mt-2 text-sm">Total: {Object.values(modalWeights).reduce((a, b) => a + b, 0)}%</div>
+                        </div>
+
+                        <div className="flex justify-end gap-2 pt-4">
+                            <Button type="button" variant="outline" onClick={() => setIsWeightsModalOpen(false)}>
+                                Cancel
+                            </Button>
+                            <Button type="submit">Save Changes</Button>
+                        </div>
+                    </form>
+                </div>
             </div>
         );
     };
@@ -393,7 +657,14 @@ function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsPagePro
                 {/* Assessments Section */}
                 <Card>
                     <CardHeader>
-                        <CardTitle>Assessments</CardTitle>
+                        <div className="flex items-center justify-between">
+                            <CardTitle>Assessments</CardTitle>
+                            {userRole === 'teacher' && (
+                                <Button variant="outline" onClick={() => setIsWeightsModalOpen(true)}>
+                                    Adjust Grade Weights
+                                </Button>
+                            )}
+                        </div>
                     </CardHeader>
                     <CardContent>
                         <Tabs defaultValue="assignments" className="w-full" onValueChange={setActiveTab}>
@@ -485,7 +756,7 @@ function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsPagePro
                         </div>
                     </CardHeader>
                     <CardContent>
-                        <StudentSection students={classDetails.students} userRole={userRole} currentUserId={auth.user.id} />
+                        <StudentSection students={classDetails.students} userRole={userRole} currentUserId={auth.user.id} weights={weights} />
                     </CardContent>
                 </Card>
 
@@ -677,6 +948,7 @@ function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsPagePro
                     </AlertDialogContent>
                 </AlertDialog>
             </div>
+            <WeightsModal />
         </AppLayout>
     );
 }
@@ -701,56 +973,45 @@ const calculateGradeByPeriodAndType = (submissions, period: string, type: string
     return average;
 };
 
-const calculatePeriodAverage = (submissions, period: string) => {
+// Update the calculatePeriodAverage function to accept weights parameter
+const calculatePeriodAverage = (submissions, period: string, weights: GradeWeights) => {
     if (!submissions?.length) return 0;
 
     const types = ['Assignment', 'Quiz', 'Exam'];
-    const weights = { Assignment: 0.3, Quiz: 0.3, Exam: 0.4 };
-
-    console.log(`Calculating ${period} average:`, { submissions });
-
     let weightedSum = 0;
     let totalWeight = 0;
 
     types.forEach((type) => {
         const grade = parseFloat(calculateGradeByPeriodAndType(submissions, period, type));
-        console.log(`${type} grade:`, grade);
-
         if (!isNaN(grade) && grade > 0) {
-            weightedSum += grade * weights[type];
-            totalWeight += weights[type];
+            weightedSum += grade * (weights[type] / 100);
+            totalWeight += weights[type] / 100;
         }
     });
 
     if (totalWeight === 0) return 0;
-    const average = (weightedSum / totalWeight).toFixed(1);
-    console.log(`${period} final average:`, average);
-    return average;
+    return (weightedSum / totalWeight).toFixed(1);
 };
 
-const calculateOverallGrade = (submissions) => {
+const calculateOverallGrade = (submissions, weights: GradeWeights) => {
     if (!submissions?.length) return 0;
 
     const periods = ['Prelims', 'Midterms', 'Finals'];
     const validPeriodGrades = periods
         .map((period) => {
-            const average = parseFloat(calculatePeriodAverage(submissions, period));
-            console.log(`${period} average for overall:`, average);
+            const average = parseFloat(calculatePeriodAverage(submissions, period, weights));
             return isNaN(average) || average === 0 ? null : average;
         })
         .filter((grade) => grade !== null);
 
-    console.log('Valid period grades:', validPeriodGrades);
-
     if (!validPeriodGrades.length) return 0;
 
     const sum = validPeriodGrades.reduce((a, b) => a + b, 0);
-    const overall = (sum / validPeriodGrades.length).toFixed(1);
-    console.log('Final overall grade:', overall);
-    return overall;
+    return (sum / validPeriodGrades.length).toFixed(1);
 };
 
-const StudentGrades = ({ student }) => {
+// Update the StudentGrades component to accept weights prop
+const StudentGrades = ({ student, weights }: { student: any; weights: GradeWeights }) => {
     return (
         <>
             <div className="mb-2 flex items-center justify-between">
@@ -759,7 +1020,7 @@ const StudentGrades = ({ student }) => {
                     <p className="text-muted-foreground text-sm">{student.student_number}</p>
                 </div>
                 <div className="text-right">
-                    <p className="text-lg font-bold">Overall: {calculateOverallGrade(student.submissions)}%</p>
+                    <p className="text-lg font-bold">Overall: {calculateOverallGrade(student.submissions, weights)}%</p>
                 </div>
             </div>
             <div className="mt-4 grid gap-4">
@@ -767,7 +1028,7 @@ const StudentGrades = ({ student }) => {
                     <div key={period} className="space-y-2">
                         <div className="flex items-center justify-between">
                             <h4 className="font-medium">{period}</h4>
-                            <Badge>{calculatePeriodAverage(student.submissions, period)}%</Badge>
+                            <Badge>{calculatePeriodAverage(student.submissions, period, weights)}%</Badge>
                         </div>
                         <div className="flex gap-2">
                             <Badge variant="outline">Assignments: {calculateGradeByPeriodAndType(student.submissions, period, 'Assignment')}%</Badge>

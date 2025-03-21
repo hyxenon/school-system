@@ -53,4 +53,12 @@ class Schedule extends Model
             ->where('year_level', $this->year_level)
             ->where('block', $this->block);
     }
+
+    /**
+     * Get the grade weights associated with the schedule.
+     */
+    public function gradeWeights()
+    {
+        return $this->hasOne(GradeWeight::class);
+    }
 }

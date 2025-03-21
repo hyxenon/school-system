@@ -375,4 +375,29 @@ class ScheduleController extends Controller
             ]
         ]);
     }
+
+    public function updateWeights(Request $request, Schedule $schedule)
+    {
+        $validated = $request->validate([
+            'Assignment' => 'required|integer|min:0|max:100',
+            'Quiz' => 'required|integer|min:0|max:100',
+            'Exam' => 'required|integer|min:0|max:100',
+        ]);
+
+        $total = $validated['Assignment'] + $validated['Quiz'] + $validated['Exam'];
+        if ($total !== 100) {
+            return back()->withErrors(['weights' => 'Weights must sum to 100%']);
+        }
+
+        $schedule->gradeWeights()->updateOrCreate(
+            ['schedule_id' => $schedule->id],
+            [
+                'assignment_weight' => $validated['Assignment'],
+                'quiz_weight' => $validated['Quiz'],
+                'exam_weight' => $validated['Exam'],
+            ]
+        );
+
+        return back()->with('success', 'Grade weights updated successfully');
+    }
 }
