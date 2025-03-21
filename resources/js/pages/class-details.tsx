@@ -505,6 +505,16 @@ function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsProps) 
         setData('period', value);
     };
 
+    // Helper function to get student submission for an assignment
+    const getStudentSubmission = (assignmentId) => {
+        if (userRole !== 'student') return null;
+
+        const student = classDetails.students.find((s) => s.user_id === auth.user.id);
+        if (!student || !student.submissions) return null;
+
+        return student.submissions.find((sub) => sub.assignment_id === assignmentId);
+    };
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`${classDetails.subject.code}`} />
@@ -612,48 +622,48 @@ function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsProps) 
                                     {filteredAssignments('Assignment').length > 0 ? (
                                         filteredAssignments('Assignment')
                                             .slice(0, showAllAssignments ? undefined : 5)
-                                            .map((assignment) => (
-                                                <Collapsible key={assignment.id} className="rounded-md border">
-                                                    <div className="p-4">
-                                                        <div className="flex items-start justify-between">
-                                                            <div>
-                                                                <CollapsibleTrigger className="cursor-pointer text-left hover:underline">
+                                            .map((assignment) => {
+                                                const studentSubmission = getStudentSubmission(assignment.id);
+
+                                                return (
+                                                    <Card key={assignment.id} className="overflow-hidden">
+                                                        <div className="p-4">
+                                                            <div className="flex items-start justify-between">
+                                                                <div>
                                                                     <h4 className="font-medium">{assignment.title}</h4>
-                                                                </CollapsibleTrigger>
-                                                                <div className="mt-2 flex flex-wrap items-center gap-2">
-                                                                    <Badge variant="outline">{assignment.assessment_type}</Badge>
-                                                                    <Badge>{assignment.period}</Badge>
-                                                                    <Badge variant="secondary">Points: {assignment.total_points}</Badge>
-                                                                    <span className="text-muted-foreground flex items-center text-xs">
-                                                                        <Clock className="mr-1 h-3 w-3" />
-                                                                        Due: {new Date(assignment.due_date).toLocaleDateString()}
-                                                                    </span>
-                                                                </div>
-                                                            </div>
-                                                            {userRole === 'teacher' && <ActionMenu assignment={assignment} />}
-                                                        </div>
-                                                        <CollapsibleContent className="mt-2">
-                                                            <p className="text-muted-foreground mt-2 text-sm">{assignment.description}</p>
-                                                            {userRole === 'student' &&
-                                                                classDetails.students
-                                                                    .find((s) => s.user_id === auth.user.id)
-                                                                    ?.submissions?.find((sub) => sub.assignment_id === assignment.id)?.feedback && (
-                                                                    <div className="mt-4 border-t pt-2">
-                                                                        <p className="text-muted-foreground text-sm font-medium">Feedback:</p>
-                                                                        <p className="text-muted-foreground text-sm">
-                                                                            {
-                                                                                classDetails.students
-                                                                                    .find((s) => s.user_id === auth.user.id)
-                                                                                    .submissions.find((sub) => sub.assignment_id === assignment.id)
-                                                                                    .feedback
-                                                                            }
-                                                                        </p>
+                                                                    <p className="text-muted-foreground mt-2 text-sm">{assignment.description}</p>
+                                                                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                                                                        <Badge variant="outline">{assignment.assessment_type}</Badge>
+                                                                        <Badge>{assignment.period}</Badge>
+                                                                        {userRole === 'student' && studentSubmission?.grade ? (
+                                                                            <Badge
+                                                                                variant="secondary"
+                                                                                className="bg-green-100 text-green-800 hover:bg-green-200"
+                                                                            >
+                                                                                Score: {studentSubmission.grade}/{assignment.total_points}
+                                                                            </Badge>
+                                                                        ) : (
+                                                                            <Badge variant="secondary">Points: {assignment.total_points}</Badge>
+                                                                        )}
+                                                                        <span className="text-muted-foreground flex items-center text-xs">
+                                                                            <Clock className="mr-1 h-3 w-3" />
+                                                                            Due: {new Date(assignment.due_date).toLocaleDateString()}
+                                                                        </span>
                                                                     </div>
-                                                                )}
-                                                        </CollapsibleContent>
-                                                    </div>
-                                                </Collapsible>
-                                            ))
+                                                                </div>
+                                                                {userRole === 'teacher' && <ActionMenu assignment={assignment} />}
+                                                            </div>
+
+                                                            {userRole === 'student' && studentSubmission?.feedback && (
+                                                                <div className="mt-4 rounded-md bg-slate-50 p-3 dark:bg-slate-900">
+                                                                    <p className="mb-1 text-sm font-medium">Instructor Feedback:</p>
+                                                                    <p className="text-sm">{studentSubmission.feedback}</p>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </Card>
+                                                );
+                                            })
                                     ) : (
                                         <p className="text-muted-foreground py-4 text-center">No assignments found.</p>
                                     )}
@@ -687,49 +697,51 @@ function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsProps) 
                                     {filteredAssignments('Quiz').length > 0 ? (
                                         filteredAssignments('Quiz')
                                             .slice(0, showAllAssignments ? undefined : 5)
-                                            .map((assignment) => (
-                                                <Collapsible key={assignment.id} className="rounded-md border">
-                                                    {/* Similar structure as in assignments tab */}
-                                                    <div className="p-4">
-                                                        <div className="flex items-start justify-between">
-                                                            <div>
-                                                                <CollapsibleTrigger className="cursor-pointer text-left hover:underline">
-                                                                    <h4 className="font-medium">{assignment.title}</h4>
-                                                                </CollapsibleTrigger>
-                                                                <div className="mt-2 flex flex-wrap items-center gap-2">
-                                                                    <Badge variant="outline">{assignment.assessment_type}</Badge>
-                                                                    <Badge>{assignment.period}</Badge>
-                                                                    <Badge variant="secondary">Points: {assignment.total_points}</Badge>
-                                                                    <span className="text-muted-foreground flex items-center text-xs">
-                                                                        <Clock className="mr-1 h-3 w-3" />
-                                                                        Due: {new Date(assignment.due_date).toLocaleDateString()}
-                                                                    </span>
+                                            .map((assignment) => {
+                                                const studentSubmission = getStudentSubmission(assignment.id);
+
+                                                return (
+                                                    <Collapsible key={assignment.id} className="rounded-md border">
+                                                        <div className="p-4">
+                                                            <div className="flex items-start justify-between">
+                                                                <div>
+                                                                    <CollapsibleTrigger className="cursor-pointer text-left hover:underline">
+                                                                        <h4 className="font-medium">{assignment.title}</h4>
+                                                                    </CollapsibleTrigger>
+                                                                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                                                                        <Badge variant="outline">{assignment.assessment_type}</Badge>
+                                                                        <Badge>{assignment.period}</Badge>
+                                                                        {userRole === 'student' && studentSubmission?.grade ? (
+                                                                            <Badge
+                                                                                variant="secondary"
+                                                                                className="bg-green-100 text-green-800 hover:bg-green-200"
+                                                                            >
+                                                                                Score: {studentSubmission.grade}/{assignment.total_points}
+                                                                            </Badge>
+                                                                        ) : (
+                                                                            <Badge variant="secondary">Points: {assignment.total_points}</Badge>
+                                                                        )}
+                                                                        <span className="text-muted-foreground flex items-center text-xs">
+                                                                            <Clock className="mr-1 h-3 w-3" />
+                                                                            Due: {new Date(assignment.due_date).toLocaleDateString()}
+                                                                        </span>
+                                                                    </div>
                                                                 </div>
+                                                                {userRole === 'teacher' && <ActionMenu assignment={assignment} />}
                                                             </div>
-                                                            {userRole === 'teacher' && <ActionMenu assignment={assignment} />}
-                                                        </div>
-                                                        <CollapsibleContent className="mt-2">
-                                                            <p className="text-muted-foreground mt-2 text-sm">{assignment.description}</p>
-                                                            {userRole === 'student' &&
-                                                                classDetails.students
-                                                                    .find((s) => s.user_id === auth.user.id)
-                                                                    ?.submissions?.find((sub) => sub.assignment_id === assignment.id)?.feedback && (
+                                                            <CollapsibleContent className="mt-2">
+                                                                <p className="text-muted-foreground mt-2 text-sm">{assignment.description}</p>
+                                                                {userRole === 'student' && studentSubmission?.feedback && (
                                                                     <div className="mt-4 border-t pt-2">
                                                                         <p className="text-muted-foreground text-sm font-medium">Feedback:</p>
-                                                                        <p className="text-muted-foreground text-sm">
-                                                                            {
-                                                                                classDetails.students
-                                                                                    .find((s) => s.user_id === auth.user.id)
-                                                                                    .submissions.find((sub) => sub.assignment_id === assignment.id)
-                                                                                    .feedback
-                                                                            }
-                                                                        </p>
+                                                                        <p className="text-muted-foreground text-sm">{studentSubmission.feedback}</p>
                                                                     </div>
                                                                 )}
-                                                        </CollapsibleContent>
-                                                    </div>
-                                                </Collapsible>
-                                            ))
+                                                            </CollapsibleContent>
+                                                        </div>
+                                                    </Collapsible>
+                                                );
+                                            })
                                     ) : (
                                         <p className="text-muted-foreground py-4 text-center">No quizzes found.</p>
                                     )}
@@ -763,49 +775,51 @@ function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsProps) 
                                     {filteredAssignments('Exam').length > 0 ? (
                                         filteredAssignments('Exam')
                                             .slice(0, showAllAssignments ? undefined : 5)
-                                            .map((assignment) => (
-                                                <Collapsible key={assignment.id} className="rounded-md border">
-                                                    {/* Similar structure as in assignments tab */}
-                                                    <div className="p-4">
-                                                        <div className="flex items-start justify-between">
-                                                            <div>
-                                                                <CollapsibleTrigger className="cursor-pointer text-left hover:underline">
-                                                                    <h4 className="font-medium">{assignment.title}</h4>
-                                                                </CollapsibleTrigger>
-                                                                <div className="mt-2 flex flex-wrap items-center gap-2">
-                                                                    <Badge variant="outline">{assignment.assessment_type}</Badge>
-                                                                    <Badge>{assignment.period}</Badge>
-                                                                    <Badge variant="secondary">Points: {assignment.total_points}</Badge>
-                                                                    <span className="text-muted-foreground flex items-center text-xs">
-                                                                        <Clock className="mr-1 h-3 w-3" />
-                                                                        Due: {new Date(assignment.due_date).toLocaleDateString()}
-                                                                    </span>
+                                            .map((assignment) => {
+                                                const studentSubmission = getStudentSubmission(assignment.id);
+
+                                                return (
+                                                    <Collapsible key={assignment.id} className="rounded-md border">
+                                                        <div className="p-4">
+                                                            <div className="flex items-start justify-between">
+                                                                <div>
+                                                                    <CollapsibleTrigger className="cursor-pointer text-left hover:underline">
+                                                                        <h4 className="font-medium">{assignment.title}</h4>
+                                                                    </CollapsibleTrigger>
+                                                                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                                                                        <Badge variant="outline">{assignment.assessment_type}</Badge>
+                                                                        <Badge>{assignment.period}</Badge>
+                                                                        {userRole === 'student' && studentSubmission?.grade ? (
+                                                                            <Badge
+                                                                                variant="secondary"
+                                                                                className="bg-green-100 text-green-800 hover:bg-green-200"
+                                                                            >
+                                                                                Score: {studentSubmission.grade}/{assignment.total_points}
+                                                                            </Badge>
+                                                                        ) : (
+                                                                            <Badge variant="secondary">Points: {assignment.total_points}</Badge>
+                                                                        )}
+                                                                        <span className="text-muted-foreground flex items-center text-xs">
+                                                                            <Clock className="mr-1 h-3 w-3" />
+                                                                            Due: {new Date(assignment.due_date).toLocaleDateString()}
+                                                                        </span>
+                                                                    </div>
                                                                 </div>
+                                                                {userRole === 'teacher' && <ActionMenu assignment={assignment} />}
                                                             </div>
-                                                            {userRole === 'teacher' && <ActionMenu assignment={assignment} />}
-                                                        </div>
-                                                        <CollapsibleContent className="mt-2">
-                                                            <p className="text-muted-foreground mt-2 text-sm">{assignment.description}</p>
-                                                            {userRole === 'student' &&
-                                                                classDetails.students
-                                                                    .find((s) => s.user_id === auth.user.id)
-                                                                    ?.submissions?.find((sub) => sub.assignment_id === assignment.id)?.feedback && (
+                                                            <CollapsibleContent className="mt-2">
+                                                                <p className="text-muted-foreground mt-2 text-sm">{assignment.description}</p>
+                                                                {userRole === 'student' && studentSubmission?.feedback && (
                                                                     <div className="mt-4 border-t pt-2">
                                                                         <p className="text-muted-foreground text-sm font-medium">Feedback:</p>
-                                                                        <p className="text-muted-foreground text-sm">
-                                                                            {
-                                                                                classDetails.students
-                                                                                    .find((s) => s.user_id === auth.user.id)
-                                                                                    .submissions.find((sub) => sub.assignment_id === assignment.id)
-                                                                                    .feedback
-                                                                            }
-                                                                        </p>
+                                                                        <p className="text-muted-foreground text-sm">{studentSubmission.feedback}</p>
                                                                     </div>
                                                                 )}
-                                                        </CollapsibleContent>
-                                                    </div>
-                                                </Collapsible>
-                                            ))
+                                                            </CollapsibleContent>
+                                                        </div>
+                                                    </Collapsible>
+                                                );
+                                            })
                                     ) : (
                                         <p className="text-muted-foreground py-4 text-center">No exams found.</p>
                                     )}
