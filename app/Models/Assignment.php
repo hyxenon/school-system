@@ -11,20 +11,31 @@ class Assignment extends Model
     use HasFactory;
 
     protected $fillable = [
-        'subject_id',
         'title',
         'description',
         'due_date',
         'assessment_type',
+        'period', // Make sure this is included
+        'total_points',
+        'subject_id',
+        'schedule_id',
         'created_by',
         'year_level',
-        'block'
+        'block',
+    ];
 
+    protected $casts = [
+        'due_date' => 'datetime',
     ];
 
     public function subject()
     {
         return $this->belongsTo(Subject::class);
+    }
+
+    public function schedule()
+    {
+        return $this->belongsTo(Schedule::class);
     }
 
     public function studentSubmissions()

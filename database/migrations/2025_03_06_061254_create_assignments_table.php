@@ -14,11 +14,12 @@ return new class extends Migration
         Schema::create('assignments', function (Blueprint $table) {
             $table->id();
             $table->foreignId('subject_id')->constrained()->onDelete('cascade');
+            $table->foreignId('schedule_id')->constrained()->onDelete('cascade');
             $table->string('title');
             $table->text('description');
             $table->date('due_date');
             $table->integer('year_level');
-            $table->integer('semester');
+            $table->string('block');
             $table->enum('assessment_type', ['Prelims', 'Midterms', 'Finals']);
             $table->foreignId('created_by')->constrained('employees')->onDelete('cascade');
             $table->timestamps();

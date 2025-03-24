@@ -224,3 +224,118 @@ export interface Announcements {
     created_at: string;
     updated_at: string;
 }
+
+export interface Class {
+    id: number;
+    subject_id: number;
+    room_id: number;
+    course_id: number;
+    professor_id: number;
+    academic_year: string;
+    semester: number;
+    year_level: number;
+    block: string;
+    schedule_type: string;
+    day: string;
+    start_time: string;
+    end_time: string;
+    max_students: number;
+    status: string;
+    created_at: string;
+    updated_at: string;
+    subject: Subject;
+    room: Room;
+    course: Course;
+}
+
+export interface GradeWeights {
+    Assignment: number;
+    Quiz: number;
+    Exam: number;
+}
+
+export interface StudentSubmission {
+    id: number;
+    assignment_id: number;
+    grade?: number;
+    feedback?: string;
+    assignment?: {
+        id: number;
+        assessment_type: string;
+        period: string;
+        total_points: number;
+    };
+}
+
+export interface ClassStudent {
+    id: number;
+    user_id?: number;
+    name: string;
+    student_number: string;
+    submissions?: StudentSubmission[];
+}
+
+export interface ClassDetailsProps {
+    class: ClassDetails;
+    userRole: 'teacher' | 'student';
+}
+
+export interface ClassDetails {
+    id: number;
+    subject: {
+        id: number;
+        name: string;
+        code: string;
+        assignments: Assignment[];
+    };
+    room: {
+        name: string;
+        building: {
+            name: string;
+        };
+    };
+    day: string;
+    start_time: string;
+    end_time: string;
+    year_level: number;
+    block: string;
+    max_students: number;
+    schedule_type: string;
+    students: ClassStudent[];
+    grade_weights?: {
+        assignment_weight: number;
+        quiz_weight: number;
+        exam_weight: number;
+    };
+}
+
+export interface AssignmentDetails {
+    id: number;
+    title: string;
+    description: string;
+    due_date: string;
+    assessment_type: string;
+    period: string;
+    total_points: number;
+    created_at: string;
+}
+
+export interface AssessmentFormData {
+    title: string;
+    description: string;
+    due_date: string;
+    assessment_type: string;
+    period: string;
+    total_points: number;
+    subject_id: number;
+    schedule_id: number;
+    year_level: number;
+    block: string;
+}
+
+export interface GradingFormData {
+    student_id: string;
+    assignment_id: string;
+    grade: string;
+    feedback: string;
+}

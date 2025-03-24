@@ -256,4 +256,148 @@ class ScheduleController extends Controller
             'type' => $type
         ]);
     }
+
+    public function getTeacherClasses(Request $request)
+    {
+        $teacherId = auth()->user()->employee->id;
+
+        $classes = Schedule::with(['subject', 'room.building', 'course'])
+            ->where('professor_id', $teacherId)
+            ->where('status', 'Active')
+            ->when($request->academic_year, function ($query) use ($request) {
+                return $query->where('academic_year', $request->academic_year);
+            })
+            ->when($request->semester, function ($query) use ($request) {
+                return $query->where('semester', $request->semester);
+            })
+            ->orderBy('day')
+            ->orderBy('start_time')
+            ->get()
+            ->groupBy(['academic_year', 'semester']);
+
+        return $this->renderClasses($classes, 'teacher');
+    }
+
+    public function getStudentClasses(Request $request)
+    {
+        $student = auth()->user()->student;
+
+        $classes = Schedule::with(['subject', 'room.building', 'course'])
+            ->where('course_id', $student->course_id)
+            ->where('year_level', $student->year_level)
+            ->where('block', $student->block)
+            ->where('status', 'Active')
+            ->when($request->academic_year, function ($query) use ($request) {
+                return $query->where('academic_year', $request->academic_year);
+            })
+            ->when($request->semester, function ($query) use ($request) {
+                return $query->where('semester', $request->semester);
+            })
+            ->orderBy('day')
+            ->orderBy('start_time')
+            ->get()
+            ->groupBy(['academic_year', 'semester']);
+
+        return $this->renderClasses($classes, 'student');
+    }
+
+    private function renderClasses($schedules, $type)
+    {
+        return Inertia::render('my-classes', [
+            'classes' => $schedules,
+            'type' => $type
+        ]);
+    }
+
+    public function show($id)
+    {
+        $schedule = Schedule::with([
+            'subject',
+            'subject.assignments' => function ($query) use ($id) {
+                // Only get assignments for this specific schedule
+                $query->where('schedule_id', $id);
+            },
+            'room.building',
+            'course',
+            'students.user',
+            'students.submissions' => function ($query) use ($id) {
+                // Filter submissions by joining with assignments table
+                $query->whereHas('assignment', function ($q) use ($id) {
+                    $q->where('schedule_id', $id);
+                })->with(['assignment' => function ($q) use ($id) {
+                    $q->where('schedule_id', $id);
+                }]);
+            }
+        ])->findOrFail($id);
+
+        $userRole = auth()->user()->employee ? 'teacher' : 'student';
+        $currentUserId = auth()->id();
+
+        $students = $schedule->students()->with([
+            'user',
+            'submissions' => function ($query) use ($id) {
+                // Same filtering for the students' submissions
+                $query->whereHas('assignment', function ($q) use ($id) {
+                    $q->where('schedule_id', $id);
+                })->with(['assignment' => function ($q) use ($id) {
+                    $q->where('schedule_id', $id);
+                }]);
+            }
+        ])->get()
+            ->map(function ($student) {
+                return [
+                    'id' => $student->id,
+                    'user_id' => $student->user->id, // Add user_id
+                    'name' => $student->user->name,
+                    'student_number' => $student->student_number,
+                    'submissions' => $student->submissions->map(function ($submission) {
+                        return [
+                            'id' => $submission->id,
+                            'assignment_id' => $submission->assignment_id,
+                            'grade' => $submission->grade,
+                            'feedback' => $submission->feedback,
+                            'assignment' => [
+                                'id' => $submission->assignment->id,
+                                'period' => $submission->assignment->period,
+                                'assessment_type' => $submission->assignment->assessment_type,
+                                'total_points' => $submission->assignment->total_points
+                            ]
+                        ];
+                    })
+                ];
+            });
+
+        return Inertia::render('class-details', [
+            'class' => array_merge($schedule->toArray(), ['students' => $students]),
+            'userRole' => $userRole,
+            'auth' => [
+                'user' => auth()->user() // Make sure to include full user data
+            ]
+        ]);
+    }
+
+    public function updateWeights(Request $request, Schedule $schedule)
+    {
+        $validated = $request->validate([
+            'Assignment' => 'required|integer|min:0|max:100',
+            'Quiz' => 'required|integer|min:0|max:100',
+            'Exam' => 'required|integer|min:0|max:100',
+        ]);
+
+        $total = $validated['Assignment'] + $validated['Quiz'] + $validated['Exam'];
+        if ($total !== 100) {
+            return back()->withErrors(['weights' => 'Weights must sum to 100%']);
+        }
+
+        $schedule->gradeWeights()->updateOrCreate(
+            ['schedule_id' => $schedule->id],
+            [
+                'assignment_weight' => $validated['Assignment'],
+                'quiz_weight' => $validated['Quiz'],
+                'exam_weight' => $validated['Exam'],
+            ]
+        );
+
+        return back()->with('success', 'Grade weights updated successfully');
+    }
 }

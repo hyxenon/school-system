@@ -1,15 +1,11 @@
-export function useInitials() {
-    const getInitials = (fullName: string): string => {
-        const names = fullName.trim().split(' ');
+export function getInitials(name: string | null | undefined): string {
+    if (!name) return '';
 
-        if (names.length === 0) return '';
-        if (names.length === 1) return names[0].charAt(0).toUpperCase();
-
-        const firstInitial = names[0].charAt(0);
-        const lastInitial = names[names.length - 1].charAt(0);
-
-        return `${firstInitial}${lastInitial}`.toUpperCase();
-    };
-
-    return getInitials;
+    return name
+        .trim()
+        .split(' ')
+        .map((word) => word[0])
+        .join('')
+        .toUpperCase()
+        .slice(0, 2);
 }
