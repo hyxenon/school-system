@@ -22,7 +22,6 @@ class ScheduleController extends Controller
             'course'
         ]);
 
-        // Server-side filtering if needed
         if ($request->has('subject_id')) {
             $query->where('subject_id', $request->subject_id);
         }
@@ -46,7 +45,7 @@ class ScheduleController extends Controller
                 ->orWhereHas('room', function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%");
                 })
-                ->orWhereHas('course', function ($q) use ($search) { // Add course search
+                ->orWhereHas('course', function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
                         ->orWhere('course_code', 'like', "%{$search}%");
                 })
@@ -55,9 +54,6 @@ class ScheduleController extends Controller
 
         $schedules = $query->get();
         $courses = Course::select('id', 'name', 'course_code')->get();
-
-        // Debug logging
-
 
         return Inertia::render('schedule', [
             'schedules' => $schedules,
@@ -90,7 +86,7 @@ class ScheduleController extends Controller
             'subject_id' => 'required|exists:subjects,id',
             'room_id' => 'required|exists:rooms,id',
             'professor_id' => 'required|exists:employees,id',
-            'course_id' => 'required|exists:courses,id', // Add course validation
+            'course_id' => 'required|exists:courses,id',
             'day' => 'required|in:Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday',
             'start_time' => ['required', 'regex:/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/'],
             'end_time' => ['required', 'regex:/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/', 'after:start_time'],
@@ -103,11 +99,9 @@ class ScheduleController extends Controller
             'status' => 'required|in:Active,Inactive,Cancelled'
         ]);
 
-        // Format times to proper HH:mm:ss format
         $validated['start_time'] = date('H:i:s', strtotime($validated['start_time']));
         $validated['end_time'] = date('H:i:s', strtotime($validated['end_time']));
 
-        // Check for scheduling conflicts
         $conflict = Schedule::where('day', $request->day)
             ->where(function ($query) use ($request) {
                 $query->where('room_id', $request->room_id)
@@ -129,16 +123,13 @@ class ScheduleController extends Controller
             return back()->withErrors(['conflict' => 'The schedule conflicts with an existing schedule.']);
         }
 
-
         Schedule::create($validated);
 
         return redirect()->route('schedules.index')->with('success', 'Schedule created successfully.');
     }
 
-
     public function update(Request $request, Schedule $schedule)
     {
-        // Format times to match database format
         $formattedStartTime = date('H:i:s', strtotime($request->start_time));
         $formattedEndTime = date('H:i:s', strtotime($request->end_time));
 
@@ -159,16 +150,13 @@ class ScheduleController extends Controller
             'status' => 'required|in:Active,Inactive,Cancelled',
         ]);
 
-        // Replace the times with formatted versions
         $validated['start_time'] = $formattedStartTime;
         $validated['end_time'] = $formattedEndTime;
 
-        // Verify end time is after start time
         if (strtotime($formattedEndTime) <= strtotime($formattedStartTime)) {
             return back()->withErrors(['end_time' => 'The end time must be after start time']);
         }
 
-        // Check for scheduling conflicts, excluding the current schedule being updated
         $conflict = Schedule::where('id', '!=', $schedule->id)
             ->where('day', $request->day)
             ->where(function ($query) use ($request) {
@@ -192,8 +180,6 @@ class ScheduleController extends Controller
         }
 
         $schedule->update($validated);
-
-
 
         return redirect()->route('schedules.index')
             ->with('success', 'Schedule updated successfully.');
@@ -261,7 +247,7 @@ class ScheduleController extends Controller
     {
         $teacherId = auth()->user()->employee->id;
 
-        $classes = Schedule::with(['subject', 'room.building', 'course'])
+        $schedules = Schedule::with(['subject', 'room.building', 'course'])
             ->where('professor_id', $teacherId)
             ->where('status', 'Active')
             ->when($request->academic_year, function ($query) use ($request) {
@@ -272,17 +258,18 @@ class ScheduleController extends Controller
             })
             ->orderBy('day')
             ->orderBy('start_time')
-            ->get()
-            ->groupBy(['academic_year', 'semester']);
+            ->get();
 
-        return $this->renderClasses($classes, 'teacher');
+        $groupedClasses = $this->groupSchedulesBySubject($schedules);
+
+        return $this->renderClasses($groupedClasses, 'teacher');
     }
 
     public function getStudentClasses(Request $request)
     {
         $student = auth()->user()->student;
 
-        $classes = Schedule::with(['subject', 'room.building', 'course'])
+        $schedules = Schedule::with(['subject', 'room.building', 'course'])
             ->where('course_id', $student->course_id)
             ->where('year_level', $student->year_level)
             ->where('block', $student->block)
@@ -295,10 +282,76 @@ class ScheduleController extends Controller
             })
             ->orderBy('day')
             ->orderBy('start_time')
-            ->get()
-            ->groupBy(['academic_year', 'semester']);
+            ->get();
 
-        return $this->renderClasses($classes, 'student');
+        $groupedClasses = $this->groupSchedulesBySubject($schedules);
+
+        return $this->renderClasses($groupedClasses, 'student');
+    }
+
+    private function groupSchedulesBySubject($schedules)
+    {
+        $grouped = [];
+
+        foreach ($schedules as $schedule) {
+            $year = $schedule->academic_year;
+            $semester = $schedule->semester;
+            $subjectId = $schedule->subject_id;
+
+            if (!isset($grouped[$year])) {
+                $grouped[$year] = [];
+            }
+
+            if (!isset($grouped[$year][$semester])) {
+                $grouped[$year][$semester] = [];
+            }
+
+            $subjectExists = false;
+            foreach ($grouped[$year][$semester] as &$classItem) {
+                if ($classItem['subject_id'] === $subjectId) {
+                    $classItem['meeting_times'][] = [
+                        'id' => $schedule->id,
+                        'day' => $schedule->day,
+                        'start_time' => $schedule->start_time,
+                        'end_time' => $schedule->end_time,
+                        'room_id' => $schedule->room_id,
+                        'room' => $schedule->room,
+                    ];
+                    $subjectExists = true;
+                    break;
+                }
+            }
+
+            if (!$subjectExists) {
+                $grouped[$year][$semester][] = [
+                    'id' => $schedule->id,
+                    'subject_id' => $schedule->subject_id,
+                    'course_id' => $schedule->course_id,
+                    'professor_id' => $schedule->professor_id,
+                    'block' => $schedule->block,
+                    'year_level' => $schedule->year_level,
+                    'academic_year' => $schedule->academic_year,
+                    'semester' => $schedule->semester,
+                    'schedule_type' => $schedule->schedule_type,
+                    'max_students' => $schedule->max_students,
+                    'status' => $schedule->status,
+                    'subject' => $schedule->subject,
+                    'course' => $schedule->course,
+                    'meeting_times' => [
+                        [
+                            'id' => $schedule->id,
+                            'day' => $schedule->day,
+                            'start_time' => $schedule->start_time,
+                            'end_time' => $schedule->end_time,
+                            'room_id' => $schedule->room_id,
+                            'room' => $schedule->room,
+                        ]
+                    ]
+                ];
+            }
+        }
+
+        return $grouped;
     }
 
     private function renderClasses($schedules, $type)
@@ -313,41 +366,52 @@ class ScheduleController extends Controller
     {
         $schedule = Schedule::with([
             'subject',
-            'subject.assignments' => function ($query) use ($id) {
-                // Only get assignments for this specific schedule
-                $query->where('schedule_id', $id);
-            },
             'room.building',
             'course',
             'students.user',
-            'students.submissions' => function ($query) use ($id) {
-                // Filter submissions by joining with assignments table
-                $query->whereHas('assignment', function ($q) use ($id) {
-                    $q->where('schedule_id', $id);
-                })->with(['assignment' => function ($q) use ($id) {
-                    $q->where('schedule_id', $id);
-                }]);
-            }
         ])->findOrFail($id);
 
-        $userRole = auth()->user()->employee ? 'teacher' : 'student';
-        $currentUserId = auth()->id();
+        // Find all related schedules for the same subject, course, block, year level, and semester
+        $relatedScheduleIds = Schedule::where('subject_id', $schedule->subject_id)
+            ->where('course_id', $schedule->course_id)
+            ->where('block', $schedule->block)
+            ->where('year_level', $schedule->year_level)
+            ->where('academic_year', $schedule->academic_year)
+            ->where('semester', $schedule->semester)
+            ->pluck('id')
+            ->toArray();
 
+        // Get assignments for all related schedules with all details
+        $assignments = \App\Models\Assignment::whereIn('schedule_id', $relatedScheduleIds)
+            ->get()
+            ->map(function ($assignment) {
+                return [
+                    'id' => $assignment->id,
+                    'title' => $assignment->title,
+                    'description' => $assignment->description,
+                    'due_date' => $assignment->due_date,
+                    'assessment_type' => $assignment->assessment_type,
+                    'period' => $assignment->period,
+                    'total_points' => $assignment->total_points,
+                    'schedule_id' => $assignment->schedule_id,
+                    'created_at' => $assignment->created_at,
+                    'updated_at' => $assignment->updated_at,
+                ];
+            });
+
+        // Get student submissions for assignments across all related schedules
         $students = $schedule->students()->with([
             'user',
-            'submissions' => function ($query) use ($id) {
-                // Same filtering for the students' submissions
-                $query->whereHas('assignment', function ($q) use ($id) {
-                    $q->where('schedule_id', $id);
-                })->with(['assignment' => function ($q) use ($id) {
-                    $q->where('schedule_id', $id);
-                }]);
+            'submissions' => function ($query) use ($relatedScheduleIds) {
+                $query->whereHas('assignment', function ($q) use ($relatedScheduleIds) {
+                    $q->whereIn('schedule_id', $relatedScheduleIds);
+                })->with(['assignment']);
             }
         ])->get()
             ->map(function ($student) {
                 return [
                     'id' => $student->id,
-                    'user_id' => $student->user->id, // Add user_id
+                    'user_id' => $student->user->id,
                     'name' => $student->user->name,
                     'student_number' => $student->student_number,
                     'submissions' => $student->submissions->map(function ($submission) {
@@ -367,11 +431,40 @@ class ScheduleController extends Controller
                 ];
             });
 
+        $userRole = auth()->user()->employee ? 'teacher' : 'student';
+
+        // Get all meeting times for this class
+        $meetingTimes = Schedule::where('subject_id', $schedule->subject_id)
+            ->where('course_id', $schedule->course_id)
+            ->where('block', $schedule->block)
+            ->where('year_level', $schedule->year_level)
+            ->where('academic_year', $schedule->academic_year)
+            ->where('semester', $schedule->semester)
+            ->with('room.building')
+            ->get()
+            ->map(function ($scheduleItem) {
+                return [
+                    'id' => $scheduleItem->id,
+                    'day' => $scheduleItem->day,
+                    'start_time' => $scheduleItem->start_time,
+                    'end_time' => $scheduleItem->end_time,
+                    'room' => $scheduleItem->room,
+                ];
+            });
+
+        // Add meeting times and assignments to the schedule data
+        $scheduleData = $schedule->toArray();
+        $scheduleData['meeting_times'] = $meetingTimes;
+        $scheduleData['students'] = $students;
+
+        // Add assignments directly to the classDetails object instead of as a relation
+        $scheduleData['subject']['assignments'] = $assignments;
+
         return Inertia::render('class-details', [
-            'class' => array_merge($schedule->toArray(), ['students' => $students]),
+            'class' => $scheduleData,
             'userRole' => $userRole,
             'auth' => [
-                'user' => auth()->user() // Make sure to include full user data
+                'user' => auth()->user()
             ]
         ]);
     }

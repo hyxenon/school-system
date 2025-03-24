@@ -67,11 +67,11 @@ function MyClassesPage({ classes, type }: MyClassesPageProps) {
             (classItem) =>
                 classItem.subject.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 classItem.subject.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                classItem.day.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                classItem.meeting_times.some((time: any) => time.day.toLowerCase().includes(searchQuery.toLowerCase())) ||
                 classItem.course.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 classItem.course.course_code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                classItem.room.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                classItem.room.building.name.toLowerCase().includes(searchQuery.toLowerCase()),
+                classItem.meeting_times.some((time: any) => time.room.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+                classItem.meeting_times.some((time: any) => time.room.building.name.toLowerCase().includes(searchQuery.toLowerCase())),
         );
     }, [classes, selectedYear, selectedSemester, searchQuery]);
 
@@ -84,10 +84,10 @@ function MyClassesPage({ classes, type }: MyClassesPageProps) {
         return `${formattedHour}:${minutes} ${ampm}`;
     };
 
-    // Handle class selection
-    const handleClassClick = (classId: number) => {
-        // router.get(`/my-classes/${classId}`);
-        router.get(route('classes.show', { id: classId }));
+    // Handle class selection - use the parent class ID, not the meeting time ID
+    const handleClassClick = (classItem: any) => {
+        // Always use the parent classItem's ID, not the meeting time ID
+        router.get(route('classes.show', { id: classItem.id }));
     };
 
     // Group classes by day for calendar view
@@ -96,7 +96,26 @@ function MyClassesPage({ classes, type }: MyClassesPageProps) {
         const result: Record<string, any[]> = {};
 
         days.forEach((day) => {
-            result[day] = filteredClasses.filter((classItem) => classItem.day === day).sort((a, b) => a.start_time.localeCompare(b.start_time));
+            result[day] = [];
+            // Look through each class and find meeting times for this day
+            filteredClasses.forEach((classItem) => {
+                const dayMeetings = classItem.meeting_times.filter((time: any) => time.day === day);
+
+                // Add each meeting time as an entry for this day
+                dayMeetings.forEach((meeting: any) => {
+                    result[day].push({
+                        ...classItem,
+                        meeting_id: meeting.id, // Store the meeting ID separately
+                        day: meeting.day,
+                        start_time: meeting.start_time,
+                        end_time: meeting.end_time,
+                        room: meeting.room,
+                    });
+                });
+            });
+
+            // Sort by start time
+            result[day].sort((a, b) => a.start_time.localeCompare(b.start_time));
         });
 
         return result;
@@ -106,15 +125,26 @@ function MyClassesPage({ classes, type }: MyClassesPageProps) {
     const summary = useMemo(() => {
         if (!filteredClasses.length) return { totalClasses: 0, totalHours: 0, uniqueSubjects: 0, uniqueRooms: 0 };
 
-        const uniqueSubjects = new Set(filteredClasses.map((c) => c.subject.id)).size;
-        const uniqueRooms = new Set(filteredClasses.map((c) => c.room.id)).size;
+        const uniqueSubjects = filteredClasses.length; // Each filtered class is already unique by subject
 
+        // Count unique rooms across all meeting times
+        const allRoomIds = new Set();
+        filteredClasses.forEach((classItem) => {
+            classItem.meeting_times.forEach((meeting: any) => {
+                allRoomIds.add(meeting.room_id);
+            });
+        });
+        const uniqueRooms = allRoomIds.size;
+
+        // Calculate total hours across all meeting times
         let totalHours = 0;
         filteredClasses.forEach((classItem) => {
-            const startTime = new Date(`2000-01-01T${classItem.start_time}`);
-            const endTime = new Date(`2000-01-01T${classItem.end_time}`);
-            const diffHours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
-            totalHours += diffHours;
+            classItem.meeting_times.forEach((meeting: any) => {
+                const startTime = new Date(`2000-01-01T${meeting.start_time}`);
+                const endTime = new Date(`2000-01-01T${meeting.end_time}`);
+                const diffHours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
+                totalHours += diffHours;
+            });
         });
 
         return {
@@ -305,7 +335,7 @@ function MyClassesPage({ classes, type }: MyClassesPageProps) {
                                     <Card
                                         key={classItem.id}
                                         className="group cursor-pointer overflow-hidden transition-all duration-300 hover:shadow-lg"
-                                        onClick={() => handleClassClick(classItem.id)}
+                                        onClick={() => handleClassClick(classItem)}
                                     >
                                         <CardHeader className="bg-primary text-primary-foreground group-hover:bg-primary/90 py-4 transition-colors">
                                             <div className="flex items-start justify-between">
@@ -325,27 +355,23 @@ function MyClassesPage({ classes, type }: MyClassesPageProps) {
                                         </CardHeader>
 
                                         <CardContent className="space-y-5 pt-6">
-                                            <div className="flex items-start gap-4">
-                                                <div className="bg-primary/10 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full">
-                                                    <Calendar className="text-primary h-5 w-5" />
+                                            {/* Show multiple meeting times */}
+                                            {classItem.meeting_times.map((meeting: any, index: number) => (
+                                                <div key={index} className="flex items-start gap-4">
+                                                    <div className="bg-primary/10 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full">
+                                                        <Calendar className="text-primary h-5 w-5" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-base font-medium">{meeting.day}</p>
+                                                        <p className="text-muted-foreground mt-0.5 text-sm">
+                                                            {formatTime(meeting.start_time)} - {formatTime(meeting.end_time)}
+                                                        </p>
+                                                        <p className="text-muted-foreground text-xs">
+                                                            {meeting.room.name} ({meeting.room.building.name})
+                                                        </p>
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <p className="text-base font-medium">{classItem.day}</p>
-                                                    <p className="text-muted-foreground mt-0.5 text-sm">
-                                                        {formatTime(classItem.start_time)} - {formatTime(classItem.end_time)}
-                                                    </p>
-                                                </div>
-                                            </div>
-
-                                            <div className="flex items-start gap-4">
-                                                <div className="bg-primary/10 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full">
-                                                    <Home className="text-primary h-5 w-5" />
-                                                </div>
-                                                <div>
-                                                    <p className="text-base font-medium">{classItem.room.name}</p>
-                                                    <p className="text-muted-foreground mt-0.5 text-sm">{classItem.room.building.name}</p>
-                                                </div>
-                                            </div>
+                                            ))}
 
                                             <div className="flex items-start gap-4">
                                                 <div className="bg-primary/10 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full">
@@ -406,8 +432,8 @@ function MyClassesPage({ classes, type }: MyClassesPageProps) {
                                                 <div className="divide-y">
                                                     {dayClasses.map((classItem) => (
                                                         <div
-                                                            key={classItem.id}
-                                                            onClick={() => handleClassClick(classItem.id)}
+                                                            key={classItem.meeting_id}
+                                                            onClick={() => handleClassClick(classItem)}
                                                             className="hover:bg-muted/30 hover:border-l-primary cursor-pointer border-l-2 border-transparent p-5 transition-colors"
                                                         >
                                                             <div className="flex flex-col gap-4 md:flex-row md:items-center">

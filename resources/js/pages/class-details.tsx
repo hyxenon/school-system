@@ -24,12 +24,18 @@ import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/app-layout';
 import type { AssessmentFormData, AssignmentDetails, BreadcrumbItem, ClassDetailsProps, GradeWeights, GradingFormData, SharedData } from '@/types';
 import { Head, router, useForm, usePage } from '@inertiajs/react';
-import { Calendar, Clock, GraduationCap, Home, MoreHorizontal, Pencil, Plus, Trash, Users } from 'lucide-react';
+import { Calendar, Clock, GraduationCap, MoreHorizontal, Pencil, Plus, Trash, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast, Toaster } from 'sonner';
 
 function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsProps) {
     const { auth } = usePage<SharedData>().props;
+
+    // Add console logging to check what data we receive
+    useEffect(() => {
+        console.log('Class details received:', classDetails);
+        console.log('Assignments:', classDetails.subject?.assignments);
+    }, [classDetails]);
 
     // Check if we need to fetch grade weights separately
     const [gradeWeightsData, setGradeWeightsData] = useState(null);
@@ -230,7 +236,14 @@ function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsProps) 
     };
 
     const filterAssignmentsByType = (type: string) => {
-        const assignments = classDetails.subject.assignments?.filter((assignment) => assignment.assessment_type === type) || [];
+        // Check if assignments exist in the response
+        if (!classDetails.subject?.assignments || !Array.isArray(classDetails.subject.assignments)) {
+            console.warn('No assignments found in subject data');
+            return [];
+        }
+
+        const assignments = classDetails.subject.assignments.filter((assignment) => assignment.assessment_type === type) || [];
+
         return assignments;
     };
 
@@ -536,29 +549,30 @@ function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsProps) 
                         </div>
                     </CardHeader>
                     <CardContent className="grid gap-6">
-                        <div className="grid gap-4 md:grid-cols-3">
-                            <div className="flex items-start gap-4">
-                                <div className="bg-primary/10 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full">
-                                    <Calendar className="text-primary h-5 w-5" />
-                                </div>
-                                <div>
-                                    <p className="text-base font-medium">{classDetails.day}</p>
-                                    <p className="text-muted-foreground mt-0.5 text-sm">
-                                        {formatTime(classDetails.start_time)} - {formatTime(classDetails.end_time)}
-                                    </p>
-                                </div>
+                        {/* Replace single schedule display with grid of meeting times */}
+                        <div className="grid gap-4">
+                            <h3 className="text-lg font-medium">Class Schedule</h3>
+                            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                                {classDetails.meeting_times?.map((meeting, index) => (
+                                    <div key={index} className="flex items-start gap-3 rounded-md border p-3">
+                                        <div className="bg-primary/10 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full">
+                                            <Calendar className="text-primary h-5 w-5" />
+                                        </div>
+                                        <div>
+                                            <p className="text-base font-medium">{meeting.day}</p>
+                                            <p className="text-muted-foreground mt-0.5 text-sm">
+                                                {formatTime(meeting.start_time)} - {formatTime(meeting.end_time)}
+                                            </p>
+                                            <p className="text-muted-foreground text-xs">
+                                                {meeting.room.name} ({meeting.room.building.name})
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
+                        </div>
 
-                            <div className="flex items-start gap-4">
-                                <div className="bg-primary/10 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full">
-                                    <Home className="text-primary h-5 w-5" />
-                                </div>
-                                <div>
-                                    <p className="text-base font-medium">{classDetails.room.name}</p>
-                                    <p className="text-muted-foreground mt-0.5 text-sm">{classDetails.room.building.name}</p>
-                                </div>
-                            </div>
-
+                        <div className="grid gap-4 md:grid-cols-2">
                             <div className="flex items-start gap-4">
                                 <div className="bg-primary/10 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full">
                                     <Users className="text-primary h-5 w-5" />
@@ -567,6 +581,9 @@ function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsProps) 
                                     <p className="text-base font-medium">Class Details</p>
                                     <p className="text-muted-foreground mt-0.5 text-sm">
                                         Year {classDetails.year_level} - Block {classDetails.block}
+                                    </p>
+                                    <p className="text-muted-foreground text-sm">
+                                        {classDetails.course.name} ({classDetails.course.course_code})
                                     </p>
                                 </div>
                             </div>
@@ -579,6 +596,9 @@ function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsProps) 
                     <CardHeader>
                         <div className="flex items-center justify-between">
                             <CardTitle>Assessments</CardTitle>
+                            {classDetails.subject?.assignments && (
+                                <div className="text-muted-foreground text-sm">{classDetails.subject.assignments.length} total assignments</div>
+                            )}
                             {userRole === 'teacher' && (
                                 <Button variant="outline" onClick={() => setIsWeightsModalOpen(true)}>
                                     Adjust Grade Weights
@@ -865,6 +885,15 @@ function ClassDetailsPage({ class: classDetails, userRole }: ClassDetailsProps) 
                             if (!open) {
                                 setEditingAssignment(null);
                                 reset();
+                            } else {
+                                // Update the form with the current schedule ID (needed for assignment creation)
+                                setData({
+                                    ...data,
+                                    schedule_id: classDetails.id,
+                                    subject_id: classDetails.subject.id,
+                                    year_level: classDetails.year_level,
+                                    block: classDetails.block,
+                                });
                             }
                         }}
                     >
