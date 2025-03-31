@@ -46,7 +46,7 @@ export interface Employee {
     department: Department;
     created_at: string;
     updated_at: string;
-    position: 'registrar' | 'treasurer' | 'professor' | 'program head';
+    position: 'registrar' | 'treasurer' | 'professor' | 'program head' | 'hr';
     isActive: boolean;
 }
 

@@ -18,7 +18,7 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->foreignIdFor(Department::class)->nullable();
             $table->decimal('salary', 10, 2);
-            $table->enum('position', allowed: ['professor', 'registrar', 'treasurer', 'program head']);
+            $table->enum('position', allowed: ['professor', 'registrar', 'treasurer', 'program head', 'hr']);
             $table->boolean('isActive');
             $table->timestamps();
         });

@@ -22,16 +22,10 @@ import AppLogo from './app-logo';
 const roleBasedNavItems: Record<string, NavItem[]> = {
     registrar: [
         {
-            title: 'Employees',
-            url: '/employees',
-            icon: BriefcaseBusiness,
-        },
-        {
             title: 'Enrollment',
             url: '/enrollment',
             icon: UserPlus,
         },
-
         {
             title: 'Department',
             url: '/departments',
@@ -52,11 +46,15 @@ const roleBasedNavItems: Record<string, NavItem[]> = {
             url: '/curriculum',
             icon: CurlyBracesIcon,
         },
-
         {
             title: 'Announcements',
             url: '/announcements',
             icon: Mic,
+        },
+        {
+            title: 'Employees',
+            url: '/employees',
+            icon: BriefcaseBusiness,
         },
     ],
     professor: [
@@ -95,11 +93,33 @@ const roleBasedNavItems: Record<string, NavItem[]> = {
             icon: CalendarIcon,
         },
     ],
+    hr: [
+        {
+            title: 'Employees',
+            url: '/employees',
+            icon: BriefcaseBusiness,
+        },
+        {
+            title: 'DTR/Attendance',
+            url: '/dtr',
+            icon: CalendarIcon,
+        },
+        {
+            title: 'Events/Meetings',
+            url: '/events',
+            icon: Mic,
+        },
+    ],
     treasurer: [
         {
             title: 'Payments',
             url: '/payments',
             icon: CircleDollarSign, // Change to appropriate icon
+        },
+        {
+            title: 'Payroll',
+            url: '/payroll',
+            icon: CircleDollarSign,
         },
     ],
 };

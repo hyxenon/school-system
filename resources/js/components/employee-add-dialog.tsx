@@ -18,7 +18,7 @@ interface EmployeeDialogProps {
 interface EmployeeFormData {
     name: string;
     email: string;
-    position: 'registrar' | 'treasurer' | 'professor';
+    position: 'registrar' | 'treasurer' | 'professor' | 'program head' | 'hr';
     department_id: string | null;
 }
 
@@ -63,7 +63,7 @@ export function AddEmployeeDialog({ departments, employee, trigger }: EmployeeDi
 
     // Set appropriate department_id when position changes
     useEffect(() => {
-        if (position === 'registrar' || position === 'treasurer') {
+        if (position === 'registrar' || position === 'treasurer' || position === 'hr') {
             setValue('department_id', null);
             setData('department_id', null);
         }
@@ -76,8 +76,8 @@ export function AddEmployeeDialog({ departments, employee, trigger }: EmployeeDi
     }, [position, departmentId, setData]);
 
     const onSubmit = (formData: EmployeeFormData) => {
-        // If position is registrar or treasurer, ensure department_id is null
-        if (formData.position === 'registrar' || formData.position === 'treasurer') {
+        // If position is registrar, treasurer, or hr, ensure department_id is null
+        if (formData.position === 'registrar' || formData.position === 'treasurer' || formData.position === 'hr') {
             formData.department_id = null;
         }
 
@@ -189,7 +189,7 @@ export function AddEmployeeDialog({ departments, employee, trigger }: EmployeeDi
                             </Label>
                             <div className="col-span-3">
                                 <Select
-                                    onValueChange={(value: 'registrar' | 'treasurer' | 'professor') => {
+                                    onValueChange={(value: 'registrar' | 'treasurer' | 'professor' | 'hr') => {
                                         setValue('position', value);
                                         setData('position', value);
                                     }}
@@ -202,6 +202,7 @@ export function AddEmployeeDialog({ departments, employee, trigger }: EmployeeDi
                                         <SelectItem value="registrar">Registrar</SelectItem>
                                         <SelectItem value="treasurer">Treasurer</SelectItem>
                                         <SelectItem value="professor">Professor</SelectItem>
+                                        <SelectItem value="hr">HR</SelectItem>
                                     </SelectContent>
                                 </Select>
                                 {serverErrors.position && <p className="text-red-500">{serverErrors.position}</p>}
@@ -218,13 +219,13 @@ export function AddEmployeeDialog({ departments, employee, trigger }: EmployeeDi
                                         setValue('department_id', value);
                                         setData('department_id', value);
                                     }}
-                                    disabled={position === 'registrar' || position === 'treasurer'}
+                                    disabled={position === 'registrar' || position === 'treasurer' || position === 'hr'}
                                     value={departmentId || undefined}
                                 >
                                     <SelectTrigger>
                                         <SelectValue
                                             placeholder={
-                                                position === 'registrar' || position === 'treasurer'
+                                                position === 'registrar' || position === 'treasurer' || position === 'hr'
                                                     ? 'No Department (Not Required)'
                                                     : 'Select department (Optional)'
                                             }

@@ -36,12 +36,12 @@ class EmployeeController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email',
-            'position' => 'required|in:registrar,treasurer,professor',
+            'position' => 'required|in:registrar,treasurer,professor,hr',
             'department_id' => 'nullable|string|exists:departments,id',
         ]);
 
-        // For registrar and treasurer, force department_id to be null
-        if (in_array($validated['position'], ['registrar', 'treasurer'])) {
+        // For registrar, treasurer, and hr, force department_id to be null
+        if (in_array($validated['position'], ['registrar', 'treasurer', 'hr'])) {
             $validated['department_id'] = null;
         }
 
@@ -95,12 +95,12 @@ class EmployeeController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email,' . $employee->user_id,
-            'position' => 'required|in:registrar,treasurer,professor',
+            'position' => 'required|in:registrar,treasurer,professor,hr',
             'department_id' => 'nullable|string|exists:departments,id',
         ]);
 
-        // For registrar and treasurer, force department_id to be null
-        if (in_array($validated['position'], ['registrar', 'treasurer'])) {
+        // For registrar, treasurer, and hr, force department_id to be null
+        if (in_array($validated['position'], ['registrar', 'treasurer', 'hr'])) {
             $validated['department_id'] = null;
         }
 
