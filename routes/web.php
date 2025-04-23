@@ -14,6 +14,7 @@ use App\Http\Controllers\RoomController;
 use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\SubjectController;
+use App\Http\Middleware\CheckRole;
 use App\Models\Schedule;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -32,16 +33,25 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::resource('employees', EmployeeController::class);
     Route::post('/employees/{employee}/toggle-active', [EmployeeController::class, 'toggleActive']);
-    Route::resource('enrollment', EnrollmentController::class);
-    Route::get('enrollment/filter', [EnrollmentController::class, 'filter'])->name('enrollment.filter');
-    Route::get('enrollment/{enrollment}/export-pdf', [EnrollmentController::class, 'exportPdf'])->name('enrollment.export-pdf');
-    Route::resource('departments', DepartmentController::class);
-    Route::resource('courses', CourseController::class);
-    Route::resource('buildings', BuildingController::class);
-    Route::resource('rooms', RoomController::class);
-    Route::resource('subjects', SubjectController::class);
-    Route::resource('curriculum', CurriculumController::class);
-    Route::delete('/curriculum/{curriculum}', [CurriculumController::class, 'destroy'])->name('curriculum.destroy');
+
+
+    // Registrar only access
+    Route::middleware([CheckRole::class . ':registrar'])->group(function () {
+        Route::resource('buildings', BuildingController::class);
+        Route::resource('rooms', RoomController::class);
+        Route::resource('departments', DepartmentController::class);
+        Route::resource('courses', CourseController::class);
+        Route::resource('subjects', SubjectController::class);
+        Route::resource('curriculum', CurriculumController::class);
+        Route::delete('/curriculum/{curriculum}', [CurriculumController::class, 'destroy'])->name('curriculum.destroy');
+
+        Route::resource('enrollment', EnrollmentController::class);
+        Route::get('enrollment/filter', [EnrollmentController::class, 'filter'])->name('enrollment.filter');
+        Route::get('enrollment/{enrollment}/export-pdf', [EnrollmentController::class, 'exportPdf'])->name('enrollment.export-pdf');
+    });
+
+
+
     Route::get('/api/curriculum/subjects', [CurriculumController::class, 'getSubjects']);
     Route::resource('schedules', ScheduleController::class);
     Route::resource('announcements', AnnouncementController::class);
@@ -53,37 +63,40 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 
     // Treasury
-    Route::get('/payments', [PaymentController::class, 'index'])->name('payments.index');
-    Route::post('/payments', [PaymentController::class, 'store'])->name('payments.store');
-
-
-
-    // Schedule Routes
-    Route::get('/my-schedules', function () {
-        $user = auth()->user();
-        if ($user->employee) {
-            return app(ScheduleController::class)->getTeacherSchedule(request());
-        }
-        if ($user->student) {
-            return app(ScheduleController::class)->getStudentSchedule(request());
-        }
-        return redirect()->route('dashboard')->with('error', 'Unauthorized access');
-    })->name('my-schedules');
-
-    Route::get('/my-classes', function () {
-        $user = auth()->user();
-        if ($user->employee) {
-            return app(ScheduleController::class)->getTeacherClasses(request());
-        }
-        if ($user->student) {
-            return app(ScheduleController::class)->getStudentClasses(request());
-        }
-        return redirect()->route('dashboard')->with('error', 'Unauthorized access');
+    Route::middleware([CheckRole::class . ':treasurer'])->group(function () {
+        Route::get('/payments', [PaymentController::class, 'index'])->name('payments.index');
+        Route::post('/payments', [PaymentController::class, 'store'])->name('payments.store');
     });
 
-    Route::get('/my-classes/{id}', [ScheduleController::class, 'show'])->name('classes.show');
-    Route::post('/assignments', [AssignmentController::class, 'store'])->name('assignments.store');
-    Route::post('/classes/{schedule}/weights', [ScheduleController::class, 'updateWeights'])->name('classes.weights.update');
+
+    Route::middleware([CheckRole::class . ':studentAndProfessor'])->group(function () {
+        // Schedule Routes
+        Route::get('/my-schedules', function () {
+            $user = auth()->user();
+            if ($user->employee) {
+                return app(ScheduleController::class)->getTeacherSchedule(request());
+            }
+            if ($user->student) {
+                return app(ScheduleController::class)->getStudentSchedule(request());
+            }
+            return redirect()->route('dashboard')->with('error', 'Unauthorized access');
+        })->name('my-schedules');
+
+        Route::get('/my-classes', function () {
+            $user = auth()->user();
+            if ($user->employee) {
+                return app(ScheduleController::class)->getTeacherClasses(request());
+            }
+            if ($user->student) {
+                return app(ScheduleController::class)->getStudentClasses(request());
+            }
+            return redirect()->route('dashboard')->with('error', 'Unauthorized access');
+        });
+
+        Route::get('/my-classes/{id}', [ScheduleController::class, 'show'])->name('classes.show');
+        Route::post('/assignments', [AssignmentController::class, 'store'])->name('assignments.store');
+        Route::post('/classes/{schedule}/weights', [ScheduleController::class, 'updateWeights'])->name('classes.weights.update');
+    });
 });
 
 // Assignment routes
