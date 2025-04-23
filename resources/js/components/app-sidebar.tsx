@@ -100,12 +100,12 @@ const roleBasedNavItems: Record<string, NavItem[]> = {
             icon: BriefcaseBusiness,
         },
         {
-            title: 'DTR/Attendance',
-            url: '/dtr',
+            title: 'DTR',
+            url: '/DTR',
             icon: CalendarIcon,
         },
         {
-            title: 'Events/Meetings',
+            title: 'Events',
             url: '/events',
             icon: Mic,
         },

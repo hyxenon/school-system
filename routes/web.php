@@ -7,6 +7,7 @@ use App\Http\Controllers\BuildingController;
 use App\Http\Controllers\CourseController;
 use App\Http\Controllers\CurriculumController;
 use App\Http\Controllers\DepartmentController;
+use App\Http\Controllers\DTRController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\EnrollmentController;
 use App\Http\Controllers\PaymentController;
@@ -29,11 +30,6 @@ Route::get('/', function () {
 Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/dashboard', [AnnouncementController::class, 'getAnnouncements'])->name('dashboard');
-    // Registrar 
-
-    Route::resource('employees', EmployeeController::class);
-    Route::post('/employees/{employee}/toggle-active', [EmployeeController::class, 'toggleActive']);
-
 
     // Registrar only access
     Route::middleware([CheckRole::class . ':registrar'])->group(function () {
@@ -96,6 +92,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/my-classes/{id}', [ScheduleController::class, 'show'])->name('classes.show');
         Route::post('/assignments', [AssignmentController::class, 'store'])->name('assignments.store');
         Route::post('/classes/{schedule}/weights', [ScheduleController::class, 'updateWeights'])->name('classes.weights.update');
+    });
+
+    // HR access only
+    Route::middleware([CheckRole::class . ':hr'])->group(function () {
+        Route::resource('employees', EmployeeController::class);
+        Route::post('/employees/{employee}/toggle-active', [EmployeeController::class, 'toggleActive']);
+        Route::resource('/DTR', DTRController::class);
     });
 });
 
