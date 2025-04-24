@@ -32,7 +32,7 @@ import { cn } from '@/lib/utils';
 import { BreadcrumbItem } from '@/types';
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import { format } from 'date-fns';
-import { CalendarIcon, FileSpreadsheet, PieChart, Search } from 'lucide-react';
+import { CalendarIcon, FileSpreadsheet, Search } from 'lucide-react';
 import { useState } from 'react';
 import { Toaster, toast } from 'sonner';
 
@@ -238,12 +238,6 @@ const DTRPage = ({ dtrRecords, employees, filters, statuses }: DTRPageProps) => 
             <div className="mb-6 flex items-center justify-between">
                 <h1 className="text-2xl font-bold">Daily Time Record Management</h1>
                 <div className="flex gap-2">
-                    <Button asChild variant="outline">
-                        <Link href="/DTR-attendance-report">
-                            <PieChart className="mr-1 h-4 w-4" />
-                            Attendance Report
-                        </Link>
-                    </Button>
                     <Button asChild variant="outline">
                         <Link href="/DTR-payroll">
                             <FileSpreadsheet className="mr-1 h-4 w-4" />

@@ -330,77 +330,8 @@ class DTRController extends Controller
      */
     public function exportForPayroll(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'start_date' => 'required|date',
-            'end_date' => 'required|date|after_or_equal:start_date',
-            'employee_id' => 'nullable|exists:employees,id',
-        ]);
 
-        if ($validator->fails()) {
-            return back()->withErrors($validator)->withInput();
-        }
-
-        $query = DTR::with(['employee.user', 'employee.department'])
-            ->whereBetween('date', [$request->start_date, $request->end_date]);
-
-        if ($request->employee_id) {
-            $query->where('employee_id', $request->employee_id);
-        }
-
-        $dtrRecords = $query->get();
-
-        // Process records for payroll
-        $payrollData = [];
-        $orphanedRecordsCount = 0;
-
-        foreach ($dtrRecords as $record) {
-            // Skip records with missing employee relationship
-            if (!$record->employee) {
-                $orphanedRecordsCount++;
-                Log::warning("Skipping DTR record #{$record->id} with missing employee relationship during payroll export");
-                continue;
-            }
-
-            $employeeId = $record->employee_id;
-
-            if (!isset($payrollData[$employeeId])) {
-                $payrollData[$employeeId] = [
-                    'employee' => ucwords(strtolower($record->employee->user->name)),
-                    'position' => ucwords(strtolower($record->employee->position)),
-                    'department' => $record->employee->department ? ucwords(strtolower($record->employee->department->name)) : 'Not assigned',
-                    'total_hours' => 0,
-                    'overtime_hours' => 0,
-                    'days_present' => 0,
-                    'days_absent' => 0,
-                    'days_late' => 0,
-                    'days_on_leave' => 0,
-                ];
-            }
-
-            $payrollData[$employeeId]['total_hours'] += $record->hours_worked;
-            $payrollData[$employeeId]['overtime_hours'] += $record->overtime_hours;
-
-            switch ($record->status) {
-                case 'Present':
-                    $payrollData[$employeeId]['days_present']++;
-                    break;
-                case 'Absent':
-                    $payrollData[$employeeId]['days_absent']++;
-                    break;
-                case 'Late':
-                    $payrollData[$employeeId]['days_late']++;
-                    break;
-                case 'On Leave':
-                    $payrollData[$employeeId]['days_on_leave']++;
-                    break;
-            }
-        }
-
-        return Inertia::render('dtr-payroll-export', [
-            'payrollData' => $payrollData,
-            'startDate' => $request->start_date,
-            'endDate' => $request->end_date,
-        ]);
+        return Inertia::render('dtr-payroll-export');
     }
 
     /**
@@ -422,64 +353,10 @@ class DTRController extends Controller
     /**
      * Generate report for attendance analytics.
      */
-    public function attendanceReport(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'start_date' => 'required|date',
-            'end_date' => 'required|date|after_or_equal:start_date',
-            'department_id' => 'nullable|exists:departments,id',
-        ]);
+    // public function attendanceReport(Request $request)
+    // {
 
-        if ($validator->fails()) {
-            return back()->withErrors($validator)->withInput();
-        }
 
-        // Get employees filtered by department if specified
-        $employees = Employee::query()
-            ->with(['user', 'department'])
-            ->when($request->department_id, function ($query) use ($request) {
-                return $query->where('department_id', $request->department_id);
-            })
-            ->get();
-
-        $employeeIds = $employees->pluck('id');
-
-        // Get DTR records for these employees in the specified date range
-        $dtrRecords = DTR::whereBetween('date', [$request->start_date, $request->end_date])
-            ->whereIn('employee_id', $employeeIds)
-            ->get();
-
-        // Generate report data
-        $reportData = [
-            'total_employees' => $employees->count(),
-            'total_attendance_records' => $dtrRecords->count(),
-            'present_count' => $dtrRecords->where('status', 'Present')->count(),
-            'absent_count' => $dtrRecords->where('status', 'Absent')->count(),
-            'late_count' => $dtrRecords->where('status', 'Late')->count(),
-            'on_leave_count' => $dtrRecords->where('status', 'On Leave')->count(),
-            'average_hours' => $dtrRecords->avg('hours_worked'),
-            'total_overtime_hours' => $dtrRecords->sum('overtime_hours'),
-            'employee_stats' => $employees->map(function ($employee) use ($dtrRecords) {
-                $employeeRecords = $dtrRecords->where('employee_id', $employee->id);
-
-                return [
-                    'name' => ucwords(strtolower($employee->user->name)),
-                    'position' => ucwords(strtolower($employee->position)),
-                    'department' => $employee->department ? ucwords(strtolower($employee->department->name)) : 'Not assigned',
-                    'present' => $employeeRecords->where('status', 'Present')->count(),
-                    'absent' => $employeeRecords->where('status', 'Absent')->count(),
-                    'late' => $employeeRecords->where('status', 'Late')->count(),
-                    'on_leave' => $employeeRecords->where('status', 'On Leave')->count(),
-                    'total_hours' => $employeeRecords->sum('hours_worked'),
-                    'overtime_hours' => $employeeRecords->sum('overtime_hours'),
-                ];
-            }),
-        ];
-
-        return Inertia::render('dtr-attendance-report', [
-            'reportData' => $reportData,
-            'startDate' => $request->start_date,
-            'endDate' => $request->end_date,
-        ]);
-    }
+    //     return Inertia::render('dtr-attendance-report');
+    // }
 }

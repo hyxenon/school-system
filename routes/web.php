@@ -98,12 +98,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware([CheckRole::class . ':hr'])->group(function () {
         Route::resource('employees', EmployeeController::class);
         Route::post('/employees/{employee}/toggle-active', [EmployeeController::class, 'toggleActive']);
-        Route::resource('/DTR', DTRController::class);
+        Route::resource('DTR', DTRController::class);
 
         // Additional DTR routes
         Route::post('/DTR/mark-as-paid', [DTRController::class, 'markAsPaid'])->name('dtr.mark-as-paid');
         Route::get('/DTR-payroll', [DTRController::class, 'exportForPayroll'])->name('dtr.payroll');
-        Route::get('/DTR-attendance-report', [DTRController::class, 'attendanceReport'])->name('dtr.attendance-report');
     });
 });
 
