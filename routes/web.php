@@ -11,6 +11,7 @@ use App\Http\Controllers\DTRController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\EnrollmentController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\PayrollController;
 use App\Http\Controllers\RoomController;
 use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\StudentController;
@@ -103,6 +104,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // Additional DTR routes
         Route::post('/DTR/mark-as-paid', [DTRController::class, 'markAsPaid'])->name('dtr.mark-as-paid');
         Route::get('/DTR-payroll', [DTRController::class, 'exportForPayroll'])->name('dtr.payroll');
+
+        Route::resource('payroll', PayrollController::class);
     });
 });
 

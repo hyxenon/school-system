@@ -5,6 +5,7 @@ import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, Sid
 import { SharedData, type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
 import {
+    BanknoteIcon,
     BookA,
     BookOpen,
     BriefcaseBusiness,
@@ -103,6 +104,11 @@ const roleBasedNavItems: Record<string, NavItem[]> = {
             title: 'DTR',
             url: '/DTR',
             icon: CalendarIcon,
+        },
+        {
+            title: 'Payroll',
+            url: '/payroll',
+            icon: BanknoteIcon,
         },
         {
             title: 'Events',
