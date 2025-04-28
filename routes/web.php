@@ -133,5 +133,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 });
 
+// Payroll routes
+Route::middleware('auth')->group(function () {
+    Route::get('/payroll', [App\Http\Controllers\PayrollController::class, 'index'])->name('payroll.index');
+    Route::get('/payroll/create', [App\Http\Controllers\PayrollController::class, 'create'])->name('payroll.create');
+    Route::post('/payroll', [App\Http\Controllers\PayrollController::class, 'store'])->name('payroll.store');
+    Route::get('/payroll/{payroll}', [App\Http\Controllers\PayrollController::class, 'show'])->name('payroll.show');
+    Route::get('/payroll/{payroll}/edit', [App\Http\Controllers\PayrollController::class, 'edit'])->name('payroll.edit');
+    Route::put('/payroll/{payroll}', [App\Http\Controllers\PayrollController::class, 'update'])->name('payroll.update');
+    Route::delete('/payroll/{payroll}', [App\Http\Controllers\PayrollController::class, 'destroy'])->name('payroll.destroy');
+    Route::get('/payroll-report', [App\Http\Controllers\PayrollController::class, 'report'])->name('payroll.report');
+});
+
 require __DIR__ . '/settings.php';
 require __DIR__ . '/auth.php';

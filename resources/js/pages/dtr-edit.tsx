@@ -210,165 +210,138 @@ const EditDTRPage = ({ dtr, employees, statuses, leaveTypes }: EditDTRProps) => 
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Edit DTR Record" />
             <Toaster />
+            <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
+                <div className="mb-6 flex items-center justify-between">
+                    <h1 className="text-2xl font-bold">Edit DTR Record</h1>
+                </div>
 
-            <div className="mb-6 flex items-center justify-between">
-                <h1 className="text-2xl font-bold">Edit DTR Record</h1>
-            </div>
-
-            <Card>
-                <CardHeader>
-                    <CardTitle>Update Daily Time Record</CardTitle>
-                    <CardDescription>Edit attendance record for {dtr.employee.user.name}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <Form {...form}>
-                        <form onSubmit={onSubmit} className="space-y-6">
-                            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                                {/* Employee Selection */}
-                                <FormField
-                                    control={control}
-                                    name="employee_id"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Employee</FormLabel>
-                                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                                <FormControl>
-                                                    <SelectTrigger>
-                                                        <SelectValue placeholder="Select an employee" />
-                                                    </SelectTrigger>
-                                                </FormControl>
-                                                <SelectContent>
-                                                    <div className="p-2">
-                                                        <div className="relative">
-                                                            <Input
-                                                                ref={searchInputRef}
-                                                                placeholder="Search employees..."
-                                                                value={employeeSearch}
-                                                                onChange={handleSearchChange}
-                                                                className="mb-2"
-                                                                onKeyDown={(e) => {
-                                                                    // Prevent select from closing on key press
-                                                                    e.stopPropagation();
-                                                                }}
-                                                            />
-                                                            {employeeSearch && (
-                                                                <X
-                                                                    className="text-muted-foreground absolute top-1/2 right-2 h-4 w-4 -translate-y-1/2 cursor-pointer"
-                                                                    onClick={clearSearch}
-                                                                />
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                    {filteredEmployees.length > 0 ? (
-                                                        filteredEmployees.map((employee) => (
-                                                            <SelectItem key={employee.id} value={employee.id.toString()}>
-                                                                <div className="flex flex-col">
-                                                                    <div className="font-medium">
-                                                                        [{employee.employee_id}] {employee.name}
-                                                                    </div>
-                                                                    <div className="text-muted-foreground text-xs">
-                                                                        {employee.position} - {employee.department}
-                                                                    </div>
-                                                                </div>
-                                                            </SelectItem>
-                                                        ))
-                                                    ) : (
-                                                        <div className="text-muted-foreground p-2 text-center">No employees found</div>
-                                                    )}
-                                                </SelectContent>
-                                            </Select>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-
-                                {/* Date */}
-                                <FormField
-                                    control={control}
-                                    name="date"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Date</FormLabel>
-                                            <Popover>
-                                                <PopoverTrigger asChild>
-                                                    <FormControl>
-                                                        <Button
-                                                            variant="outline"
-                                                            className={cn(
-                                                                'w-full pl-3 text-left font-normal',
-                                                                !field.value && 'text-muted-foreground',
-                                                            )}
-                                                        >
-                                                            {field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
-                                                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                                        </Button>
-                                                    </FormControl>
-                                                </PopoverTrigger>
-                                                <PopoverContent className="w-auto p-0" align="start">
-                                                    <Calendar
-                                                        mode="single"
-                                                        selected={field.value}
-                                                        onSelect={field.onChange}
-                                                        disabled={(date) => date > new Date() || date < new Date('1900-01-01')}
-                                                        initialFocus
-                                                    />
-                                                </PopoverContent>
-                                            </Popover>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-
-                                {/* Status */}
-                                <FormField
-                                    control={control}
-                                    name="status"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Status</FormLabel>
-                                            <Select
-                                                onValueChange={(value) => {
-                                                    field.onChange(value);
-                                                    setSelectedStatus(value);
-                                                }}
-                                                defaultValue={field.value}
-                                            >
-                                                <FormControl>
-                                                    <SelectTrigger>
-                                                        <SelectValue placeholder="Select status" />
-                                                    </SelectTrigger>
-                                                </FormControl>
-                                                <SelectContent>
-                                                    {statuses.map((status) => (
-                                                        <SelectItem key={status} value={status}>
-                                                            {status}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-
-                                {/* Leave Type (visible only when status is "On Leave") */}
-                                {selectedStatus === 'On Leave' && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Update Daily Time Record</CardTitle>
+                        <CardDescription>Edit attendance record for {dtr.employee.user.name}</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Form {...form}>
+                            <form onSubmit={onSubmit} className="space-y-6">
+                                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                                    {/* Employee Selection */}
                                     <FormField
                                         control={control}
-                                        name="leave_type"
+                                        name="employee_id"
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Leave Type</FormLabel>
-                                                <Select onValueChange={field.onChange} defaultValue={field.value || ''}>
+                                                <FormLabel>Employee</FormLabel>
+                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
                                                     <FormControl>
                                                         <SelectTrigger>
-                                                            <SelectValue placeholder="Select leave type" />
+                                                            <SelectValue placeholder="Select an employee" />
                                                         </SelectTrigger>
                                                     </FormControl>
                                                     <SelectContent>
-                                                        {leaveTypes.map((type) => (
-                                                            <SelectItem key={type} value={type}>
-                                                                {type}
+                                                        <div className="p-2">
+                                                            <div className="relative">
+                                                                <Input
+                                                                    ref={searchInputRef}
+                                                                    placeholder="Search employees..."
+                                                                    value={employeeSearch}
+                                                                    onChange={handleSearchChange}
+                                                                    className="mb-2"
+                                                                    onKeyDown={(e) => {
+                                                                        // Prevent select from closing on key press
+                                                                        e.stopPropagation();
+                                                                    }}
+                                                                />
+                                                                {employeeSearch && (
+                                                                    <X
+                                                                        className="text-muted-foreground absolute top-1/2 right-2 h-4 w-4 -translate-y-1/2 cursor-pointer"
+                                                                        onClick={clearSearch}
+                                                                    />
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                        {filteredEmployees.length > 0 ? (
+                                                            filteredEmployees.map((employee) => (
+                                                                <SelectItem key={employee.id} value={employee.id.toString()}>
+                                                                    <div className="flex flex-col">
+                                                                        <div className="font-medium">
+                                                                            [{employee.employee_id}] {employee.name}
+                                                                        </div>
+                                                                        <div className="text-muted-foreground text-xs">
+                                                                            {employee.position} - {employee.department}
+                                                                        </div>
+                                                                    </div>
+                                                                </SelectItem>
+                                                            ))
+                                                        ) : (
+                                                            <div className="text-muted-foreground p-2 text-center">No employees found</div>
+                                                        )}
+                                                    </SelectContent>
+                                                </Select>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+
+                                    {/* Date */}
+                                    <FormField
+                                        control={control}
+                                        name="date"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Date</FormLabel>
+                                                <Popover>
+                                                    <PopoverTrigger asChild>
+                                                        <FormControl>
+                                                            <Button
+                                                                variant="outline"
+                                                                className={cn(
+                                                                    'w-full pl-3 text-left font-normal',
+                                                                    !field.value && 'text-muted-foreground',
+                                                                )}
+                                                            >
+                                                                {field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
+                                                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                                            </Button>
+                                                        </FormControl>
+                                                    </PopoverTrigger>
+                                                    <PopoverContent className="w-auto p-0" align="start">
+                                                        <Calendar
+                                                            mode="single"
+                                                            selected={field.value}
+                                                            onSelect={field.onChange}
+                                                            disabled={(date) => date > new Date() || date < new Date('1900-01-01')}
+                                                            initialFocus
+                                                        />
+                                                    </PopoverContent>
+                                                </Popover>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+
+                                    {/* Status */}
+                                    <FormField
+                                        control={control}
+                                        name="status"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Status</FormLabel>
+                                                <Select
+                                                    onValueChange={(value) => {
+                                                        field.onChange(value);
+                                                        setSelectedStatus(value);
+                                                    }}
+                                                    defaultValue={field.value}
+                                                >
+                                                    <FormControl>
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder="Select status" />
+                                                        </SelectTrigger>
+                                                    </FormControl>
+                                                    <SelectContent>
+                                                        {statuses.map((status) => (
+                                                            <SelectItem key={status} value={status}>
+                                                                {status}
                                                             </SelectItem>
                                                         ))}
                                                     </SelectContent>
@@ -377,142 +350,170 @@ const EditDTRPage = ({ dtr, employees, statuses, leaveTypes }: EditDTRProps) => 
                                             </FormItem>
                                         )}
                                     />
-                                )}
-                            </div>
 
-                            {/* Time fields (visible for Present, Late, Half Day) */}
-                            {['Present', 'Late', 'Half Day'].includes(selectedStatus) && (
-                                <>
-                                    <h3 className="text-lg font-medium">Time Details</h3>
-                                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-                                        {/* Time In */}
+                                    {/* Leave Type (visible only when status is "On Leave") */}
+                                    {selectedStatus === 'On Leave' && (
                                         <FormField
                                             control={control}
-                                            name="time_in"
+                                            name="leave_type"
                                             render={({ field }) => (
                                                 <FormItem>
-                                                    <FormLabel>Time In</FormLabel>
-                                                    <FormControl>
-                                                        <Input type="time" {...field} value={field.value || ''} className="w-full" />
-                                                    </FormControl>
+                                                    <FormLabel>Leave Type</FormLabel>
+                                                    <Select onValueChange={field.onChange} defaultValue={field.value || ''}>
+                                                        <FormControl>
+                                                            <SelectTrigger>
+                                                                <SelectValue placeholder="Select leave type" />
+                                                            </SelectTrigger>
+                                                        </FormControl>
+                                                        <SelectContent>
+                                                            {leaveTypes.map((type) => (
+                                                                <SelectItem key={type} value={type}>
+                                                                    {type}
+                                                                </SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
                                                     <FormMessage />
                                                 </FormItem>
                                             )}
                                         />
+                                    )}
+                                </div>
 
-                                        {/* Time Out */}
-                                        <FormField
-                                            control={control}
-                                            name="time_out"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Time Out</FormLabel>
-                                                    <FormControl>
-                                                        <Input type="time" {...field} value={field.value || ''} className="w-full" />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-
-                                        {/* Lunch Start */}
-                                        <FormField
-                                            control={control}
-                                            name="lunch_start"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Lunch Start (Optional)</FormLabel>
-                                                    <FormControl>
-                                                        <Input type="time" {...field} value={field.value || ''} className="w-full" />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-
-                                        {/* Lunch End */}
-                                        <FormField
-                                            control={control}
-                                            name="lunch_end"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Lunch End (Optional)</FormLabel>
-                                                    <FormControl>
-                                                        <Input type="time" {...field} value={field.value || ''} className="w-full" />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                    </div>
-
-                                    <h3 className="text-lg font-medium">Overtime Details (Optional)</h3>
-                                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                                        {/* Overtime Start */}
-                                        <FormField
-                                            control={control}
-                                            name="overtime_start"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Overtime Start</FormLabel>
-                                                    <FormControl>
-                                                        <Input type="time" {...field} value={field.value || ''} className="w-full" />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-
-                                        {/* Overtime End */}
-                                        <FormField
-                                            control={control}
-                                            name="overtime_end"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Overtime End</FormLabel>
-                                                    <FormControl>
-                                                        <Input type="time" {...field} value={field.value || ''} className="w-full" />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                    </div>
-                                </>
-                            )}
-
-                            {/* Remarks */}
-                            <FormField
-                                control={control}
-                                name="remarks"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Remarks (Optional)</FormLabel>
-                                        <FormControl>
-                                            <Textarea
-                                                placeholder="Enter any additional notes or remarks"
-                                                className="resize-none"
-                                                {...field}
-                                                value={field.value || ''}
+                                {/* Time fields (visible for Present, Late, Half Day) */}
+                                {['Present', 'Late', 'Half Day'].includes(selectedStatus) && (
+                                    <>
+                                        <h3 className="text-lg font-medium">Time Details</h3>
+                                        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+                                            {/* Time In */}
+                                            <FormField
+                                                control={control}
+                                                name="time_in"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>Time In</FormLabel>
+                                                        <FormControl>
+                                                            <Input type="time" {...field} value={field.value || ''} className="w-full" />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
                                             />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
 
-                            <div className="flex justify-end gap-2">
-                                <Button type="button" variant="outline" onClick={() => window.history.back()}>
-                                    Cancel
-                                </Button>
-                                <Button type="submit" disabled={isSubmitting}>
-                                    {isSubmitting ? 'Updating...' : 'Update DTR Record'}
-                                </Button>
-                            </div>
-                        </form>
-                    </Form>
-                </CardContent>
-            </Card>
+                                            {/* Time Out */}
+                                            <FormField
+                                                control={control}
+                                                name="time_out"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>Time Out</FormLabel>
+                                                        <FormControl>
+                                                            <Input type="time" {...field} value={field.value || ''} className="w-full" />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+
+                                            {/* Lunch Start */}
+                                            <FormField
+                                                control={control}
+                                                name="lunch_start"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>Lunch Start (Optional)</FormLabel>
+                                                        <FormControl>
+                                                            <Input type="time" {...field} value={field.value || ''} className="w-full" />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+
+                                            {/* Lunch End */}
+                                            <FormField
+                                                control={control}
+                                                name="lunch_end"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>Lunch End (Optional)</FormLabel>
+                                                        <FormControl>
+                                                            <Input type="time" {...field} value={field.value || ''} className="w-full" />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                        </div>
+
+                                        <h3 className="text-lg font-medium">Overtime Details (Optional)</h3>
+                                        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                                            {/* Overtime Start */}
+                                            <FormField
+                                                control={control}
+                                                name="overtime_start"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>Overtime Start</FormLabel>
+                                                        <FormControl>
+                                                            <Input type="time" {...field} value={field.value || ''} className="w-full" />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+
+                                            {/* Overtime End */}
+                                            <FormField
+                                                control={control}
+                                                name="overtime_end"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>Overtime End</FormLabel>
+                                                        <FormControl>
+                                                            <Input type="time" {...field} value={field.value || ''} className="w-full" />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                        </div>
+                                    </>
+                                )}
+
+                                {/* Remarks */}
+                                <FormField
+                                    control={control}
+                                    name="remarks"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Remarks (Optional)</FormLabel>
+                                            <FormControl>
+                                                <Textarea
+                                                    placeholder="Enter any additional notes or remarks"
+                                                    className="resize-none"
+                                                    {...field}
+                                                    value={field.value || ''}
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+
+                                <div className="flex justify-end gap-2">
+                                    <Button type="button" variant="outline" onClick={() => window.history.back()}>
+                                        Cancel
+                                    </Button>
+                                    <Button type="submit" disabled={isSubmitting}>
+                                        {isSubmitting ? 'Updating...' : 'Update DTR Record'}
+                                    </Button>
+                                </div>
+                            </form>
+                        </Form>
+                    </CardContent>
+                </Card>
+            </div>
         </AppLayout>
     );
 };
