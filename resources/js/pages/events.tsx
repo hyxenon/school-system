@@ -222,7 +222,7 @@ function EventsPage({ events }: { events: Event[] }) {
                 </div>
 
                 <Card>
-                    <CardContent className="p-0 sm:p-6">
+                    <CardContent className="p-0 sm:p-6 [&_.fc-button-active]:!border-[#357C4A] [&_.fc-button-active]:!bg-[#357C4A] [&_.fc-button-primary]:!border-[#006938] [&_.fc-button-primary]:!bg-[#006938] [&_.fc-button-primary:hover]:!border-[#357C4A] [&_.fc-button-primary:hover]:!bg-[#357C4A]">
                         <FullCalendar
                             plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
                             initialView="dayGridMonth"

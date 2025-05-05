@@ -85,7 +85,7 @@ export default function Dashboard({ announcements, events = [] }: DashboardProps
                 <Card>
                     <CardContent className="p-4">
                         <h2 className="mb-4 text-xl font-semibold">Upcoming Events</h2>
-                        <div className="h-[500px]">
+                        <div className="h-[500px] [&_.fc-button-active]:!border-[#357C4A] [&_.fc-button-active]:!bg-[#357C4A] [&_.fc-button-primary]:!border-[#006938] [&_.fc-button-primary]:!bg-[#006938] [&_.fc-button-primary:hover]:!border-[#357C4A] [&_.fc-button-primary:hover]:!bg-[#357C4A]">
                             <FullCalendar
                                 plugins={[dayGridPlugin]}
                                 initialView="dayGridMonth"
