@@ -258,7 +258,9 @@ function PayrollPage({ payrolls, stats, filters }: PayrollProps) {
                                                     <div className="font-medium">
                                                         {payroll.employee.first_name} {payroll.employee.last_name}
                                                     </div>
-                                                    <div className="text-muted-foreground text-sm">{payroll.employee.position}</div>
+                                                    <div className="text-muted-foreground text-sm capitalize">
+                                                        {payroll.employee.user.name} - {payroll.employee.id}
+                                                    </div>
                                                 </TableCell>
                                                 <TableCell>
                                                     {formatDate(payroll.pay_period_start)} to {formatDate(payroll.pay_period_end)}

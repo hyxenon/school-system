@@ -267,7 +267,7 @@ export default function SchedulesIndex({ schedules, subjects, professors, rooms,
                                 paginatedSchedules.map((schedule) => (
                                     <TableRow key={schedule.id}>
                                         <TableCell className="font-medium">{schedule.subject.name}</TableCell>
-                                        <TableCell>{schedule.professor.user.name}</TableCell>
+                                        <TableCell className="capitalize">{schedule.professor.user.name}</TableCell>
                                         <TableCell>
                                             {schedule.room.name}
                                             <div className="text-muted-foreground text-xs">{schedule.room.building.name}</div>

@@ -282,7 +282,7 @@ export default function EnrollmentPage({ enrollments, courses, departments, stud
                                         enrollments.data.map((enrollment) => (
                                             <TableRow key={enrollment.id}>
                                                 <TableCell className="font-medium">{enrollment.student.id}</TableCell>
-                                                <TableCell>{enrollment.student.user.name}</TableCell>
+                                                <TableCell className="capitalize">{enrollment.student.user.name}</TableCell>
                                                 <TableCell>{enrollment.course.name}</TableCell>
                                                 <TableCell>{enrollment.academic_year}</TableCell>
                                                 <TableCell>

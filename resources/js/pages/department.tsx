@@ -324,7 +324,7 @@ export default function Department({ departments = [], totalDepartments = 12, to
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
                                             <CardTitle className="text-xl">{department.name}</CardTitle>
-                                            <Badge variant="outline" className="bg-primary/10 font-medium">
+                                            <Badge variant="outline" className="bg-[#D68722] font-medium text-white">
                                                 {department.department_code}
                                             </Badge>
                                         </div>
@@ -375,7 +375,7 @@ export default function Department({ departments = [], totalDepartments = 12, to
                                                             <div className="flex items-center justify-between">
                                                                 <div>
                                                                     <span className="font-medium">{course.name}</span>
-                                                                    <Badge variant="secondary" className="ml-2">
+                                                                    <Badge variant="secondary" className="ml-2 bg-[#F2F1AC] text-[#012B14]">
                                                                         {course.course_code}
                                                                     </Badge>
                                                                     {course.description && (

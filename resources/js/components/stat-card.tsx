@@ -39,7 +39,6 @@ export function StatCard({ title, value, icon: Icon, description, trend, classNa
                     <Icon className="text-primary h-5 w-5" />
                 </div>
             </div>
-            <div className="from-primary/40 to-primary/80 absolute bottom-0 left-0 h-1 w-full bg-gradient-to-r" />
         </div>
     );
 }

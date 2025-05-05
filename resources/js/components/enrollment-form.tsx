@@ -116,7 +116,7 @@ export function EnrollmentForm({
                             <SelectContent>
                                 {students.map((student) => (
                                     <SelectItem key={student.id} value={student.id}>
-                                        {student.id} - {student.user.name}
+                                        {student.id} - <span className="capitalize">{student.user.name}</span>
                                     </SelectItem>
                                 ))}
                             </SelectContent>

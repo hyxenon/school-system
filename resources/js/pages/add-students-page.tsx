@@ -305,7 +305,7 @@ function AddStudentPage({ auth, courses, students: initialStudents }: { auth: an
                                 {pagination.data.length > 0 ? (
                                     pagination.data.map((student) => (
                                         <TableRow key={student.id}>
-                                            <TableCell className="font-medium">{student.user.name}</TableCell>
+                                            <TableCell className="font-medium capitalize">{student.user.name}</TableCell>
                                             <TableCell>{student.user.email}</TableCell>
                                             <TableCell>{student.course.course_code}</TableCell>
                                             <TableCell>

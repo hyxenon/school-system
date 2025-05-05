@@ -120,11 +120,6 @@ const roleBasedNavItems: Record<string, NavItem[]> = {
         {
             title: 'Payments',
             url: '/payments',
-            icon: CircleDollarSign, // Change to appropriate icon
-        },
-        {
-            title: 'Payroll',
-            url: '/payroll',
             icon: CircleDollarSign,
         },
     ],

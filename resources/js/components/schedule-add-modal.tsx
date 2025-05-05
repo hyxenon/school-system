@@ -420,7 +420,7 @@ export function ScheduleCreateModal({
                                                 {filteredProfessors.length > 0 ? (
                                                     filteredProfessors.map((professor) => (
                                                         <SelectItem key={professor.id} value={professor.id.toString()}>
-                                                            {professor.user.name}
+                                                            <span className="capitalize">{professor.user.name}</span> - {professor.id}
                                                         </SelectItem>
                                                     ))
                                                 ) : (
