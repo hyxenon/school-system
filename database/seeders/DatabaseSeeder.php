@@ -30,12 +30,16 @@ class DatabaseSeeder extends Seeder
 
         ]);
 
+        User::factory()->create([
+            'name' => "HR Admin",
+            'email' => 'hr@gmail.com',
+            'type' => 'employee',
+        ]);
 
         Department::factory()->create([
             'name' => "College of Engineering and Technology",
             'department_code' => "CECT",
         ]);
-
 
         Employee::factory()->create([
             'user_id' => 1,
@@ -51,6 +55,12 @@ class DatabaseSeeder extends Seeder
             'isActive' => true
         ]);
 
+        Employee::factory()->create([
+            'user_id' => 3,
+            'salary' => 0,
+            'position' => 'hr',
+            'isActive' => true
+        ]);
 
         $this->call(DepartmentSeeder::class);
     }

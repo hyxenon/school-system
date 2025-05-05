@@ -102,8 +102,11 @@ class AnnouncementController extends Controller
             $announcements->where('department_id', $request->department_id);
         }
 
+        $events = \App\Models\Event::orderBy('start_date')->get();
+
         return Inertia::render('dashboard', [
             'announcements' => $announcements->get(),
+            'events' => $events,
         ]);
     }
 }

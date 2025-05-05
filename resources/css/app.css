@@ -169,3 +169,64 @@
     @apply bg-background text-foreground;
     }
 }
+
+/* Calendar customization */
+.custom-calendar {
+    --fc-border-color: hsl(var(--border));
+    --fc-button-text-color: hsl(var(--foreground));
+    --fc-button-bg-color: hsl(var(--background));
+    --fc-button-border-color: hsl(var(--border));
+    --fc-button-hover-bg-color: hsl(var(--accent));
+    --fc-button-hover-border-color: hsl(var(--accent));
+    --fc-button-active-bg-color: hsl(var(--accent));
+    --fc-button-active-border-color: hsl(var(--accent));
+    --fc-today-bg-color: hsl(var(--accent) / 0.1);
+}
+
+.custom-calendar .fc-button {
+    @apply shadow-sm font-medium;
+}
+
+.custom-calendar .fc-toolbar-title {
+    @apply text-lg font-semibold;
+}
+
+.custom-calendar .fc-event {
+    @apply cursor-pointer shadow-sm transition-opacity hover:opacity-90;
+}
+
+/* Dashboard Calendar Styles */
+.dashboard-calendar {
+    --fc-border-color: hsl(var(--border));
+    --fc-button-text-color: hsl(var(--foreground));
+    --fc-button-bg-color: hsl(var(--background));
+    --fc-button-border-color: hsl(var(--border));
+    --fc-button-hover-bg-color: hsl(var(--accent));
+    --fc-button-hover-border-color: hsl(var(--accent));
+    --fc-button-active-bg-color: hsl(var(--accent));
+    --fc-button-active-border-color: hsl(var(--accent));
+    --fc-today-bg-color: hsl(var(--accent) / 0.1);
+}
+
+.dashboard-calendar .fc-button {
+    @apply shadow-sm text-sm font-medium;
+    padding: 0.3em 0.5em;
+}
+
+.dashboard-calendar .fc-toolbar-title {
+    @apply text-base font-medium;
+}
+
+.dashboard-calendar .fc-event {
+    @apply cursor-default rounded border-0 px-1 py-0.5 text-xs;
+}
+
+@media (max-width: 768px) {
+    .dashboard-calendar .fc-header-toolbar {
+        @apply flex-wrap gap-2;
+    }
+    
+    .dashboard-calendar .fc-toolbar-title {
+        @apply text-sm;
+    }
+}

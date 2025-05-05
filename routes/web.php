@@ -10,6 +10,7 @@ use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\DTRController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\EnrollmentController;
+use App\Http\Controllers\EventsController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PayrollController;
 use App\Http\Controllers\RoomController;
@@ -106,6 +107,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/DTR-payroll', [DTRController::class, 'exportForPayroll'])->name('dtr.payroll');
 
         Route::resource('payroll', PayrollController::class);
+
+
+        Route::resource('events', EventsController::class);
     });
 });
 
